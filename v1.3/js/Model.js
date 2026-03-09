@@ -12,7 +12,7 @@ function Model(loopy){
 	// SET SOME DEFAULT Properties
 	self.speed = 0.05;
 	self.DEFAULT_SIGNAL_SIZE = 0.1; //Sets size of quantum transferred by one click and size of arrow
-	self.DEFAULT_NODE_RADIUS = 70; // Sets size of bubbles
+	self.DEFAULT_NODE_RADIUS = 80; // Sets size of bubbles
 	self.DEFAULT_NODE_GAIN = 1; //Gain multiplier for signal at each node
 	self.MAX_SIGNAL_AGE = 5; //Maximum number of nodes a signal can traverse
 	self.SIGNAL_SCALE_FACTOR = 100; //sets a scaling factor for the arrows
@@ -126,6 +126,74 @@ function Model(loopy){
 		// Remove edge
 		self.edges.splice(self.edges.indexOf(edge),1);
 
+	};
+
+	// Merge two nodes into one
+	self.mergeNodes = function(nodeA, nodeB) {
+		// Tag the next history record as a designated merge event
+		self.loopy.history.pendingMergeAction = HistoryTracker.nodeMerged(
+			nodeA.label, nodeB.label, nodeA.label + '_' + nodeB.label
+		);
+
+		// 1. Snapshot all affected edge configs before killing anything
+		var edgeConfigs = [];
+		for (var i = 0; i < self.edges.length; i++) {
+			var edge = self.edges[i];
+			if (edge.from === nodeA || edge.from === nodeB ||
+				edge.to === nodeA   || edge.to === nodeB) {
+				edgeConfigs.push({
+					fromNode:        edge.from,
+					toNode:          edge.to,
+					arc:             edge.arc,
+					rotation:        edge.rotation,
+					strength:        edge.strength,
+					direction:       edge.direction,
+					attenuation:     edge.attenuation,
+					speedMultiplier: edge.speedMultiplier,
+					showLabel:       edge.showLabel
+				});
+			}
+		}
+
+		// 2. Create merged node at nodeB's position/style
+		var mergedNode = self.addNode({
+			x:           nodeB.x,
+			y:           nodeB.y,
+			label:       nodeA.label + '_' + nodeB.label,
+			hue:         nodeB.hue,
+			radius:      nodeB.radius,
+			gain:        nodeB.gain,
+			init:        nodeB.init,
+			active:      nodeB.active,
+			topLabel:    nodeB.topLabel,
+			bottomLabel: nodeB.bottomLabel
+		});
+
+		// 3. Kill originals (cascade-kills their edges)
+		nodeA.kill();
+		nodeB.kill();
+
+		// 4. Recreate edges, redirecting A/B to mergedNode, deduplicating identical ones
+		var seen = {};
+		for (var i = 0; i < edgeConfigs.length; i++) {
+			var ec = edgeConfigs[i];
+			var fromId = (ec.fromNode === nodeA || ec.fromNode === nodeB) ? mergedNode.id : ec.fromNode.id;
+			var toId   = (ec.toNode   === nodeA || ec.toNode   === nodeB) ? mergedNode.id : ec.toNode.id;
+			var key = fromId + '/' + toId + '/' + Math.sign(ec.strength);
+			if (seen[key]) continue;
+			seen[key] = true;
+			self.addEdge({
+				from:            fromId,
+				to:              toId,
+				arc:             ec.arc,
+				rotation:        ec.rotation,
+				strength:        ec.strength,
+				direction:       ec.direction,
+				attenuation:     ec.attenuation,
+				speedMultiplier: ec.speedMultiplier,
+				showLabel:       ec.showLabel
+			});
+		}
 	};
 
 	// Get all edges with start node

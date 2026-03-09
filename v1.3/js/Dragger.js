@@ -13,6 +13,9 @@ function Dragger(loopy){
 	self.dragging = null;
 	self.offsetX = 0;
 	self.offsetY = 0;
+	self.mergeTarget = null;
+	self.dragStartX = 0;
+	self.dragStartY = 0;
 
 	// Multi-select
 	self.selectedItems = [];
@@ -54,6 +57,10 @@ function Dragger(loopy){
 				self.dragging = clickedItem;
 				self.offsetX = Mouse.x - clickedItem.x;
 				self.offsetY = Mouse.y - clickedItem.y;
+				if (clickedItem._CLASS_ === "Node") {
+					self.dragStartX = clickedItem.x;
+					self.dragStartY = clickedItem.y;
+				}
 				loopy.sidebar.edit(clickedItem);
 			}
 		} else {
@@ -122,6 +129,18 @@ function Dragger(loopy){
 			var node = self.dragging;
 			node.x = Mouse.x - self.offsetX;
 			node.y = Mouse.y - self.offsetY;
+
+			// Detect potential merge target
+			self.mergeTarget = null;
+			for (var i = 0; i < loopy.model.nodes.length; i++) {
+				var candidate = loopy.model.nodes[i];
+				if (candidate !== node && candidate.isPointInNode(node.x, node.y)) {
+					self.mergeTarget = candidate;
+					break;
+				}
+			}
+
+			self.drawMergeHint();
 
 			// update coz visual glitches
 			loopy.model.update();
@@ -195,6 +214,28 @@ function Dragger(loopy){
 			self.isBoxSelecting = false;
 			self.clearSelectionBox();
 		}
+
+		// Merge if single node dropped onto another node
+		if (self.dragging && self.dragging._CLASS_ === "Node" && self.mergeTarget) {
+			var draggedNode = self.dragging;
+			var target = self.mergeTarget;
+			self.mergeTarget = null;
+			var mergeLabel = draggedNode.label + "_" + target.label;
+			if (window.confirm('Merge "' + draggedNode.label + '" and "' + target.label + '" into "' + mergeLabel + '"?')) {
+				loopy.model.mergeNodes(draggedNode, target);
+				self.dragging = null;
+				self.offsetX = 0;
+				self.offsetY = 0;
+				return;
+			} else {
+				// Restore dragged node to its pre-drag position
+				draggedNode.x = self.dragStartX;
+				draggedNode.y = self.dragStartY;
+				publish("model/changed");
+			}
+		}
+		self.mergeTarget = null;
+		self.clearSelectionBox();
 
 		// Let go!
 		self.dragging = null;
@@ -278,6 +319,34 @@ function Dragger(loopy){
 		ctx.clearRect(0, 0, self.canvas.width, self.canvas.height);
 	};
 
+	// Draw merge hint ring on potential merge target
+	self.drawMergeHint = function(){
+		var ctx = self.context;
+		ctx.clearRect(0, 0, self.canvas.width, self.canvas.height);
+		if (!self.mergeTarget) return;
+
+		ctx.save();
+		var canvasses = document.getElementById("canvasses");
+		var CW = canvasses.clientWidth - _PADDING - _PADDING;
+		var CH = canvasses.clientHeight - _PADDING_BOTTOM - _PADDING;
+		var tx = loopy.offsetX*2;
+		var ty = loopy.offsetY*2;
+		tx -= CW+_PADDING; ty -= CH+_PADDING;
+		var s = loopy.offsetScale;
+		tx = s*tx; ty = s*ty;
+		tx += CW+_PADDING; ty += CH+_PADDING;
+		if (loopy.embedded) { tx += _PADDING; ty += _PADDING; }
+		ctx.setTransform(s, 0, 0, s, tx, ty);
+
+		ctx.beginPath();
+		ctx.arc(self.mergeTarget.x * 2, self.mergeTarget.y * 2,
+		        self.mergeTarget.radius * 2 + 10, 0, Math.TAU, false);
+		ctx.strokeStyle = "rgba(255, 140, 0, 0.85)";
+		ctx.lineWidth = 4;
+		ctx.stroke();
+		ctx.restore();
+	};
+
 	// Draw selection highlights
 	subscribe("model/draw", function(){
 		if(self.selectedItems.length > 0 && !self.isBoxSelecting){
@@ -305,5 +374,6 @@ function Dragger(loopy){
 
 			ctx.restore();
 		}
+
 	});
 }

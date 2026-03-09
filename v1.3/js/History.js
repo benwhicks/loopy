@@ -23,6 +23,7 @@ function History(loopy) {
 
     // Snapshot for tracking changes
     self._lastSnapshot = null;
+    self.pendingMergeAction = null;
 
     ///////////////////////////
     // SNAPSHOT SYSTEM ////////
@@ -247,7 +248,10 @@ function History(loopy) {
 
         // Build action record
         var actionRecord;
-        if (changes.length === 1) {
+        if (self.pendingMergeAction) {
+            actionRecord = self.pendingMergeAction;
+            self.pendingMergeAction = null;
+        } else if (changes.length === 1) {
             actionRecord = changes[0];
         } else if (changes.length > 1) {
             var descriptions = changes.map(function(c) { return c.description; });

@@ -281,6 +281,16 @@ var HistoryTracker = (function() {
             };
         },
 
+        // Describe node merge
+        nodeMerged: function(labelA, labelB, mergedLabel) {
+            return {
+                description: 'Merged "' + labelA + '" and "' + labelB + '" \u2192 "' + mergedLabel + '"',
+                timestamp: formatTimestamp(),
+                type: 'node_merge',
+                details: { labelA: labelA, labelB: labelB, mergedLabel: mergedLabel }
+            };
+        },
+
         // Generic action
         genericAction: function(description) {
             return {
