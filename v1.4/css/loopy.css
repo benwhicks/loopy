@@ -395,6 +395,9 @@ NODE GROUP SWATCH PICKER (Node sidebar page)
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	/* the box is centred exactly, but capital letters optically sit high
+	   in most sans-serif fonts - nudge down a hair to compensate */
+	padding-top: 2px;
 	color: #fff;
 	font-size: 15px;
 	font-weight: bold;
