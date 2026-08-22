@@ -45,13 +45,11 @@ function NodeGroups(loopy){
 	self._defaultGroups = function(){
 		return [
 			{name: "Group 1"},
-			{name: "Group 2"},
-			{name: "Group 3"},
-			{name: "Group 4"}
+			{name: "Group 2"}
 		];
 	};
 
-	// Start with 4 groups, as requested.
+	// Start with 2 groups, as requested.
 	self.groups = self._defaultGroups();
 
 	// Colour lookup, keyed like the old static COLOUR_NODE_LIST so

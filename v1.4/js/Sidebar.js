@@ -43,22 +43,21 @@ function Sidebar(loopy){
 	// GLOBAL OPTIONS (built here, placed into the "Edit"/deselected page below) ///////////////
 	////////////////////////////////////////////////////////////////////////////////////////////
 
-	// Collapsible Node Fields / Edge Fields visibility checkboxes.
+	// Collapsible Node Fields / Edge Fields / Simulation visibility
+	// checkboxes. Node Groups ("hue") is deliberately absent - it's
+	// always on, see _buildNodeGroupsSection below.
 	var _buildFieldsOptions = function(){
 
-		var NODE_FIELD_LABELS = {
-			active: "Node Type",
-			hue: "Node Group",
-			init: "Start Amount",
-			radius: "Radius",
-			gain: "Gain",
-			strength: "Strength (Node Quantum)"
-		};
-		var EDGE_FIELD_LABELS = {
+		var FIELD_LABELS = {
+			radius: "Size",
+			edgeType: "Edge Type",
 			direction: "Edge Polarity (+/-)",
+			active: "Node Type",
+			init: "Start Amount",
+			gain: "Gain",
+			strength: "Quantum",
 			attenuation: "Signal Attenuation",
-			speedMultiplier: "Signal Speed",
-			edgeType: "Edge Type"
+			speedMultiplier: "Signal Speed"
 		};
 
 		var container = document.createElement("div");
@@ -113,13 +112,15 @@ function Sidebar(loopy){
 		};
 
 		addSubheading("Node Fields");
-		loopy.nodeOptions.NODE_KEYS.forEach(function(key){
-			body.appendChild(buildOptionCheckbox(key, NODE_FIELD_LABELS[key]));
-		});
+		body.appendChild(buildOptionCheckbox("radius", FIELD_LABELS.radius));
 
 		addSubheading("Edge Fields");
-		loopy.nodeOptions.EDGE_KEYS.forEach(function(key){
-			body.appendChild(buildOptionCheckbox(key, EDGE_FIELD_LABELS[key]));
+		body.appendChild(buildOptionCheckbox("edgeType", FIELD_LABELS.edgeType));
+		body.appendChild(buildOptionCheckbox("direction", FIELD_LABELS.direction));
+
+		addSubheading("Simulation");
+		["active", "init", "gain", "strength", "attenuation", "speedMultiplier"].forEach(function(key){
+			body.appendChild(buildOptionCheckbox(key, FIELD_LABELS[key]));
 		});
 
 		return container;
@@ -212,13 +213,13 @@ function Sidebar(loopy){
 
 		var forceBtn = document.createElement("span");
 		forceBtn.className = "mini_button";
-		forceBtn.innerHTML = "Force-Directed Layout";
+		forceBtn.innerHTML = "Force-directed";
 		forceBtn.onclick = function(){ loopy.layoutForceDirected(); };
 		buttonsRow.appendChild(forceBtn);
 
 		var sugiyamaBtn = document.createElement("span");
 		sugiyamaBtn.className = "mini_button";
-		sugiyamaBtn.innerHTML = "Sugiyama Layout";
+		sugiyamaBtn.innerHTML = "Sugiyama";
 		sugiyamaBtn.style.marginLeft = "6px";
 		sugiyamaBtn.onclick = function(){
 			if(sugiyamaBtn.getAttribute("data-disabled") === "yes") return;
@@ -300,7 +301,7 @@ function Sidebar(loopy){
         }));
         page.addComponent("radius", new ComponentSlider({
             bg: "radius",
-            label: "Node Radius:",
+            label: "Size:",
             options: [45, 60, 80, 110, 150],
             oninput: function(value){
                 Node.radius = value;
@@ -332,7 +333,9 @@ function Sidebar(loopy){
         // Which fields are globally opt-in (off by default). Toggling one
         // off only hides its Sidebar UI - the underlying Node property is
         // untouched and the node continues to simulate/render normally.
-        var OPTIONAL_KEYS = ["active", "hue", "init", "radius", "gain", "strength"];
+        // "hue" (Node Group) is deliberately absent - it's always on, so
+        // its swatch picker is never hidden here.
+        var OPTIONAL_KEYS = ["active", "init", "radius", "gain", "strength"];
 
         page.updateOptionVisibility = function(){
             var nodeOptions = loopy.nodeOptions;
@@ -522,46 +525,36 @@ function Sidebar(loopy){
 		self.addPage("Label", page);
 	})();
 
-	// Edit (shown when nothing is selected - clicking empty canvas space)
-	(function(){
-		var page = new SidebarPage();
+	// Save, share or load: export/import/history/clear - everything that
+	// isn't everyday editing gets tucked away here, same collapsible
+	// pattern as "Model options". Collapsed by default.
+	var _buildSaveShareSection = function(){
 
-		// 1. Title, links, zoom indicator
-		page.addComponent(new ComponentHTML({
+		var container = document.createElement("div");
+		container.id = "sidebar_save_share";
+
+		var toggleRow = document.createElement("div");
+		toggleRow.className = "options_toggle";
+		var collapsed = true;
+		var setToggleLabel = function(){
+			toggleRow.innerHTML = (collapsed ? "&#9656;" : "&#9662;") + " Save, share or load";
+		};
+		setToggleLabel();
+		container.appendChild(toggleRow);
+
+		var body = document.createElement("div");
+		body.className = "options_body";
+		body.style.display = "none";
+		container.appendChild(body);
+
+		toggleRow.onclick = function(){
+			collapsed = !collapsed;
+			body.style.display = collapsed ? "none" : "block";
+			setToggleLabel();
+		};
+
+		body.appendChild(new ComponentHTML({
 			html: ""+
-
-			"<b style='font-size:1.4em'>LOOPY</b> (v1.4)<br>a tool for thinking in systems<br><br>"+
-
-			"<span class='mini_button' onclick='publish(\"modal\",[\"examples\"])'>see examples</span> "+
-			"<span class='mini_button' onclick='publish(\"modal\",[\"howto\"])'>how to</span> "+
-			"<span class='mini_button' onclick='publish(\"modal\",[\"credits\"])'>credits</span><br>"+
-
-			"<hr/>"+
-
-			// ZOOM INDICATOR HERE
-			"<div style='text-align:left; color:black; font-size:20px'>"+
-			"Zoom: <span id='zoom-level'>100%</span><br>"+
-			"<span style='font-size:13px'>Ctrl+Scroll or use toolbar</span>"+
-			"</div>"+
-
-			"<hr/>"
-
-		}));
-
-		// 2. Expandable global field-visibility options
-		page.dom.appendChild(_buildFieldsOptions());
-
-		// 3. Node Groups (where you name the colours)
-		page.dom.appendChild(_buildNodeGroupsSection());
-
-		// 3.5. Layout (auto-arrange the diagram)
-		page.dom.appendChild(_buildLayoutSection());
-
-		// 4. Export controls
-		page.addComponent(new ComponentHTML({
-			html: ""+
-
-			"<hr/><br>"+
 
 			"<span class='mini_button' onclick='loopy.sidebar.showPage(\"History\")'>history manager</span><br><br>"+
 
@@ -571,66 +564,51 @@ function Sidebar(loopy){
 			"<span class='mini_button' onclick='publish(\"import/file\")'>load from file</span> <br><br>"+
 			"<span class='mini_button' onclick='publish(\"modal\",[\"embed\"])'>embed in your website</span>"
 
-		}));
+		}).dom);
 
-		// 5. Clear Graph - deletes all nodes/edges/labels (not history or
+		// Clear Graph - deletes all nodes/edges/labels (not history or
 		// settings, so an accidental clear is still Ctrl-Z undoable), only
-		// after a confirm() warning. Styled as a danger button.
-		page.addComponent(new ComponentButton({
-			danger: true,
-			label: "clear graph",
-			onclick: function(){
-				if(loopy.model.nodes.length===0 && loopy.model.edges.length===0 && loopy.model.labels.length===0){
-					return; // nothing to clear
-				}
-				var ok = confirm("This will delete every node, edge, and label on the canvas.\n\nThis cannot be undone (well - you can still Ctrl-Z it). Continue?");
-				if(ok){
-					loopy.model.clear();
-					// Blank canvas - back to a clean, centered, 100% view.
-					loopy.offsetX = 0;
-					loopy.offsetY = 0;
-					loopy.zoomReset();
-				}
+		// after a confirm() warning. Styled as a danger button. Built with
+		// the raw _createButton helper (not ComponentButton) since it's not
+		// attached to a SidebarPage via addComponent here.
+		var clearBtn = _createButton("clear graph", function(){
+			if(loopy.model.nodes.length===0 && loopy.model.edges.length===0 && loopy.model.labels.length===0){
+				return; // nothing to clear
 			}
-		}));
-
-		// 6. Credits
-		page.addComponent(new ComponentHTML({
-			html: ""+
-
-			"<hr/><br>"+
-
-			"<a target='_blank' href='../'>LOOPY</a> was "+
-			"made by <a target='_blank' href='http://ncase.me'>nicky case</a><br> and updated by <a target='_blank' href='https://people.unisa.edu.au/john.kennedy'>John Kennedy</a><br> and Anton Inkin"
-
-		}));
-
-		// Add update function for zoom display
-		page.onshow = function(){
-			// Update zoom level when page is shown
-			var updateZoom = function(){
-				var zoomElement = document.getElementById('zoom-level');
-				if(zoomElement && window.loopy){
-					zoomElement.innerHTML = Math.round(loopy.offsetScale * 100) + '%';
-				}
-			};
-
-			// Initial update
-			updateZoom();
-
-			// Subscribe to changes
-			var unsubscriber = subscribe("model/changed", updateZoom);
-
-			// Store unsubscriber for cleanup
-			page._zoomUnsubscriber = unsubscriber;
-		};
-
-		page.onhide = function(){
-			// Clean up subscription when page is hidden
-			if(page._zoomUnsubscriber){
-				unsubscribe("model/changed", page._zoomUnsubscriber);
+			var ok = confirm("This will delete every node, edge, and label on the canvas.\n\nThis cannot be undone (well - you can still Ctrl-Z it). Continue?");
+			if(ok){
+				loopy.model.clear();
+				// Blank canvas - back to a clean, centered, 100% view.
+				loopy.offsetX = 0;
+				loopy.offsetY = 0;
+				loopy.zoomReset();
 			}
-		};
+		});
+		clearBtn.setAttribute("danger", "yes");
+		clearBtn.style.marginTop = "12px";
+		body.appendChild(clearBtn);
+
+		return container;
+	};
+
+	// Edit (shown when nothing is selected - clicking empty canvas space).
+	// The old title/links/zoom header and the bottom credits blurb now
+	// live in the floating #loopy_header widget (top-left of the screen,
+	// see index.html/Loopy.js) - clicking it pops the credits text up.
+	(function(){
+		var page = new SidebarPage();
+
+		// 1. Layout (auto-arrange the diagram)
+		page.dom.appendChild(_buildLayoutSection());
+
+		// 2. Node Groups (where you name the colours) - always on
+		page.dom.appendChild(_buildNodeGroupsSection());
+
+		// 3. Expandable global field-visibility options
+		page.dom.appendChild(_buildFieldsOptions());
+
+		// 4. Expandable save/share/load (history, export, embed, clear graph)
+		page.dom.appendChild(_buildSaveShareSection());
 
 		self.addPage("Edit", page);
 	})();

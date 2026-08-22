@@ -117,6 +117,33 @@ function Loopy(config){
 	// History (Undo/Redo)
 	self.history = new History(self);
 
+	////////////
+	// HEADER //
+	////////////
+	// Floating "LOOPY (v1.4)" title, top-left over the canvas (see
+	// index.html). Clicking it pops open a short credits blurb - the
+	// "made by nicky case..." text that used to sit at the bottom of the
+	// deselected Sidebar page.
+	self.headerDOM = document.getElementById("loopy_header");
+	(function(){
+		var header = self.headerDOM;
+		var popup = document.getElementById("loopy_credits_popup");
+		if(!header || !popup) return;
+
+		header.onclick = function(event){
+			event.stopPropagation();
+			var isShown = popup.getAttribute("show") === "yes";
+			popup.setAttribute("show", isShown ? "no" : "yes");
+		};
+
+		// Click anywhere outside the popup (or its header) closes it.
+		document.addEventListener("click", function(event){
+			if(popup.getAttribute("show") !== "yes") return;
+			if(header.contains(event.target) || popup.contains(event.target)) return;
+			popup.setAttribute("show", "no");
+		});
+	})();
+
 	//////////
 	// INIT //
 	//////////
@@ -355,6 +382,7 @@ function Loopy(config){
 		// Hide all that UI
 		self.toolbar.dom.style.display = "none";
 		self.sidebar.dom.style.display = "none";
+		if(self.headerDOM) self.headerDOM.style.display = "none";
 
 		// If *NO UI AT ALL*
 		var noUI = !!parseInt(_getParameterByName("no_ui")); // force to Boolean

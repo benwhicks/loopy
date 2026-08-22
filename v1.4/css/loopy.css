@@ -136,6 +136,66 @@ div[big=yes] .play_button_label{
 }
 
 /**********
+ FLOATING HEADER (top-left title, click for credits)
+**********/
+
+#loopy_header{
+	position: fixed;
+	top: 12px;
+	left: 15px;
+	z-index: 50;
+
+	padding: 6px 10px;
+	background: transparent;
+	border-radius: 4px;
+	color: #444;
+
+	cursor: pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+
+	transition: background-color 0.15s ease;
+}
+#loopy_header:hover{
+	background: rgba(0,0,0,0.06);
+}
+#loopy_header b{
+	font-size: 15px;
+}
+#loopy_header .loopy_header_version{
+	font-size: 12px;
+	color: #777;
+}
+#loopy_header .loopy_header_sub{
+	font-size: 11px;
+	color: #777;
+	margin-top: 1px;
+}
+#loopy_credits_popup{
+	position: fixed;
+	top: 56px;
+	left: 15px;
+	z-index: 51;
+	display: none;
+
+	max-width: 220px;
+	padding: 10px 14px;
+	background: #fff;
+	color: #444;
+	font-size: 13px;
+	line-height: 1.5;
+	border-radius: 6px;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+#loopy_credits_popup[show=yes]{
+	display: block;
+}
+#loopy_credits_popup a{ color: #3a6ea5; }
+#loopy_credits_popup a:hover{ color: #5a8ec5; }
+
+/**********
  SIDEBAR
 **********/
 
@@ -301,14 +361,16 @@ div[big=yes] .play_button_label{
 SIDEBAR: GLOBAL OPTIONS (shown on the deselected/"Edit" page)
 **********/
 
-#sidebar_options{
+#sidebar_options,
+#sidebar_save_share{
 	background: #ccc;
 	border-radius: 4px;
 	padding: 10px;
 	margin: -5px -5px 15px -5px;
 	font-size: 15px;
 }
-#sidebar[mode=play] #sidebar_options{
+#sidebar[mode=play] #sidebar_options,
+#sidebar[mode=play] #sidebar_save_share{
 	background: #333;
 }
 .options_toggle{

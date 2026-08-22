@@ -2,16 +2,23 @@
 
 NODE OPTIONS
 - Global, per-field visibility toggles for the Node and Edge sidebar
-  pages. Every field EXCEPT a Node's "label" (Name) and "description"
-  (Description) is opt-in and OFF by default:
-    Node:  Node Type, Node Group, Start Amount, Radius, Gain, Strength
+  pages. Every field EXCEPT a Node's "label" (Name), "description"
+  (Description), and "hue" (Node Group - always shown, see below) is
+  opt-in and OFF by default:
+    Node:  Node Type, Start Amount, Radius, Gain, Strength
     Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed, Edge Type
 
 IMPORTANT: toggling a field OFF only hides its editing UI in the Sidebar.
 The underlying Node/Edge property is completely untouched - a node with
-"Node Group" turned off still has a hue, still simulates, still renders
-identically. Only the ability to *edit* that field from the sidebar goes
-away.
+a field turned off still simulates and renders identically. Only the
+ability to *edit* that field from the sidebar goes away.
+
+NOTE - "hue" (Node Group): kept in NODE_KEYS/self.visibility purely so
+the settings[] serialization layout (Model.js) doesn't shift for old
+saved links, but it's no longer exposed as a toggle in the Sidebar's
+"Model options" checkboxes, and Sidebar.js's Node page always shows the
+Node Group swatch picker regardless of this value - Node Groups are
+always on (see Sidebar.js's _buildNodeGroupsSection).
 
 SPECIAL CASE - "direction" (Edge Polarity): this one also gates whether
 the +/- glyph is drawn on EVERY edge on the canvas (see Edge.js draw()),

@@ -76,7 +76,7 @@ Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation], edgeType
 
 `settings[]` holds `[MAX_SIGNAL_AGE, MAX_SIGNALS_PER_EDGE, MAX_SIGNALS, showType, showGroup, showStartAmount, showRadius, showGain, showStrength, showEdgePolarity, showAttenuation, showSpeed, showEdgeType]` — entries 3+ are the diagram-embedded defaults for `NodeOptions.js`'s toggles (6 node keys then 4 edge keys) and may be absent/short in links saved by older versions (treated as "no diagram default" rather than an error).
 
-`groupNames[]` is a flat array of Node Group names (e.g. `["Risks","Mitigations"]`); the group count is `groupNames.length` (1-8) and each name's colour is `NodeGroups.PALETTE[index]` (fixed, not stored). Absent in older links, which fall back to the default 4 groups.
+`groupNames[]` is a flat array of Node Group names (e.g. `["Risks","Mitigations"]`); the group count is `groupNames.length` (1-8) and each name's colour is `NodeGroups.PALETTE[index]` (fixed, not stored). Absent in older links, which fall back to the default 2 groups.
 
 ## Embedding
 
