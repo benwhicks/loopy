@@ -194,6 +194,68 @@ function Sidebar(loopy){
 		return container;
 	};
 
+	// Layout: auto-arrange the whole diagram. Force-directed always works
+	// (causal loop diagrams are fundamentally cyclic); Sugiyama only makes
+	// sense on a true DAG, so its button disables itself live whenever the
+	// graph has a cycle (self-loops don't count - see Layout.hasCycle).
+	var _buildLayoutSection = function(){
+
+		var container = document.createElement("div");
+		container.id = "sidebar_layout";
+
+		var heading = document.createElement("div");
+		heading.className = "options_subheading";
+		heading.innerHTML = "Layout";
+		container.appendChild(heading);
+
+		var buttonsRow = document.createElement("div");
+
+		var forceBtn = document.createElement("span");
+		forceBtn.className = "mini_button";
+		forceBtn.innerHTML = "Force-Directed Layout";
+		forceBtn.onclick = function(){ loopy.layoutForceDirected(); };
+		buttonsRow.appendChild(forceBtn);
+
+		var sugiyamaBtn = document.createElement("span");
+		sugiyamaBtn.className = "mini_button";
+		sugiyamaBtn.innerHTML = "Sugiyama Layout";
+		sugiyamaBtn.style.marginLeft = "6px";
+		sugiyamaBtn.onclick = function(){
+			if(sugiyamaBtn.getAttribute("data-disabled") === "yes") return;
+			loopy.layoutSugiyama();
+		};
+		buttonsRow.appendChild(sugiyamaBtn);
+
+		container.appendChild(buttonsRow);
+
+		var refreshSugiyamaState = function(){
+			// Deferred to a fresh tick: Model.addNode/addEdge (and their
+			// remove counterparts) publish "model/changed" BEFORE actually
+			// mutating self.nodes/self.edges, so a synchronous check here
+			// would sometimes see the graph as it was a moment ago rather
+			// than as it now is. By the time this timeout fires, the
+			// triggering add/remove call has fully finished.
+			setTimeout(function(){
+				var cyclic = loopy.layoutHasCycle();
+				sugiyamaBtn.style.opacity = cyclic ? 0.4 : 1;
+				sugiyamaBtn.style.pointerEvents = cyclic ? "none" : "auto";
+				sugiyamaBtn.setAttribute("data-disabled", cyclic ? "yes" : "no");
+				if(cyclic){
+					sugiyamaBtn.setAttribute("data-balloon",
+						"Sugiyama layout needs an acyclic graph (no loops). Self-loops are fine - only multi-node cycles disable this.");
+					sugiyamaBtn.setAttribute("data-balloon-pos", "up");
+				}else{
+					sugiyamaBtn.removeAttribute("data-balloon");
+					sugiyamaBtn.removeAttribute("data-balloon-pos");
+				}
+			}, 0);
+		};
+		refreshSugiyamaState();
+		subscribe("model/changed", refreshSugiyamaState);
+
+		return container;
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// ACTUAL PAGES ////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -485,6 +547,9 @@ function Sidebar(loopy){
 
 		// 3. Node Groups (where you name the colours)
 		page.dom.appendChild(_buildNodeGroupsSection());
+
+		// 3.5. Layout (auto-arrange the diagram)
+		page.dom.appendChild(_buildLayoutSection());
 
 		// 4. Export controls
 		page.addComponent(new ComponentHTML({

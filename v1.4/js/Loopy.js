@@ -45,6 +45,50 @@ function Loopy(config){
 	self.nodeGroups = new NodeGroups(self);
 	self.model.refreshColourList();
 
+	///////////////////
+	// AUTO-LAYOUT   //
+	///////////////////
+	// Defined here (before Sidebar is constructed below) since Sidebar's
+	// Edit page calls loopy.layoutHasCycle() synchronously while building
+	// its Layout section.
+
+	// Shared runner: compute target positions with computeFn, checkpoint
+	// history BEFORE mutating anything (there's no natural "mousedown" to
+	// hang a pre-state off, unlike a drag - see History.js's "Before drag"),
+	// then animate into place. The animation's own stream of model/changed
+	// publishes gets coalesced by History's debounce into a single trailing
+	// record once it settles, so one layout run = exactly one undo step.
+	self._runLayout = function(computeFn){
+		if(self.model.nodes.length < 2) return; // nothing meaningful to lay out
+		var target = computeFn(self.model);
+		if(!target) return; // e.g. Sugiyama defensively refused a cyclic graph
+
+		self.history.record("Before layout");
+
+		self._layoutAnimation = Layout.startTransition(self, target, {
+			duration: 1000,
+			onComplete: function(){
+				self.model.center(true); // re-fit the view to the new layout
+				publish("model/changed");
+			}
+		});
+	};
+
+	self.layoutForceDirected = function(){
+		self._runLayout(Layout.computeForceDirected);
+	};
+
+	self.layoutSugiyama = function(){
+		if(self.layoutHasCycle()) return; // belt & braces - button should already be disabled
+		self._runLayout(Layout.computeSugiyama);
+	};
+
+	// Exposed so Sidebar.js can compute the Sugiyama button's live-enabled
+	// state without reaching into Layout.js directly.
+	self.layoutHasCycle = function(){
+		return Layout.hasCycle(self.model.nodes, self.model.edges);
+	};
+
 	// Loopy: SPEED!
 	self.signalSpeed = 3;
 
@@ -159,6 +203,12 @@ function Loopy(config){
 		if(self.wobbleControls>=0) self.wobbleControls--; // wobble
 		if(!self.modal.isShowing){ // modAl
 			self.model.update(); // modEl
+		}
+		if(self._layoutAnimation && !self._layoutAnimation.done){
+			self._layoutAnimation.step(Date.now());
+		}
+		if(self._layoutAnimation && self._layoutAnimation.done){
+			self._layoutAnimation = null;
 		}
 	};
 	setInterval(self.update, 1000/30); // 30 FPS, why not.
