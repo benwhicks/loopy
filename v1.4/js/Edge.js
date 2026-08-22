@@ -417,11 +417,11 @@ function Edge(model, config){
 		// Arc it! Line style always reflects edgeType, regardless of the
 		// "Edge Type" toggle - only the sidebar's ABILITY TO CHANGE it is
 		// gated, same pattern as the dark-red negative-polarity colouring.
-		// "bi-directed" starts the line at the buffered "begin" point (so
-		// it doesn't run through the tail arrowhead below); the other two
-		// types keep the original unbuffered start, right at the node.
+		// The line starts at the buffered "begin" point (a small gap from
+		// the "from" node's edge), matching how it already ends with a
+		// gap at "to" - rather than starting right at the node's centre.
 		var isBiDirected = (self.edgeType === "bi-directed");
-		var arcStart = isBiDirected ? begin : (self.arc>0 ? startAngle : -startAngle);
+		var arcStart = begin;
 		if(self.edgeType === "bi-directed") ctx.setLineDash([20,12]);
 		else if(self.edgeType === "questionable") ctx.setLineDash([2,10]);
 		else ctx.setLineDash([]);
