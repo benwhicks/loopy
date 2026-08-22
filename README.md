@@ -17,6 +17,25 @@ Other Peeps' Open Source Code I Used:
 
 Check out these [user-made LOOPY's!](http://ncase.me/loopy/v1.1/pages/examples)
 ---
+Version 1.4:
+
+New Features:
+  - Node description field: a paragraph of documentation per node, shown only in the sidebar (never drawn on the canvas)
+  - Node Groups: named colour categories using the Okabe-Ito colour-blind-safe palette, 1-8 groups, renameable, plus a "clear group" option that leaves a node explicitly ungrouped (grey)
+  - Global, per-field visibility toggles ("Model options"): almost every node/edge field is off by default until switched on, keeping the sidebar minimal until you need more
+  - Edge Polarity is now a single global setting: turning it on shows the +/- glyph on every edge and lets you edit it from the sidebar; turning it off hides the glyph everywhere without touching the underlying data
+  - Negative-polarity edges are always shown in dark red, independent of the Edge Polarity setting
+  - Edge Types: Directed (default), Bi-directed (dashed line, arrowheads at both ends), and Questionable (dotted line, "?" marker, never delivers its signal during simulation)
+  - Auto-layout: re-arrange the whole diagram in one click, either Force-Directed (always available) or Sugiyama/layered (enabled only on an acyclic graph), animated into place and fully undoable
+  - "Clear graph" button to wipe the canvas, behind a confirmation prompt
+
+Fixes & Changes:
+  - Retired the "split" node type from the sidebar - only Simulable and Non-simulable remain (older diagrams with split nodes still load and display correctly)
+  - Edges now leave a small gap at both ends, instead of starting from the node's centre
+  - Sidebar redesigned: shows only the selected node's or edge's own fields, background-tinted to match the canvas selection highlight; a collapsible "Model options" section, the Node Groups editor, and export controls live on the deselected page
+  - Default zoom on load is less zoomed in; "clear graph" resets pan/zoom back to 100%
+  - Removed the Ctrl +/- keyboard zoom shortcut, which was clashing with the browser's own page zoom (Ctrl+Scroll and the toolbar buttons still zoom LOOPY's canvas)
+
 Version 1.3:
 
 New Features:
