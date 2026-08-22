@@ -190,11 +190,11 @@ function Node(model, config){
 		ctx.save();
 		ctx.translate(x,y+_offset);
 
-		// DRAW HIGHLIGHT???
+		// DRAW HIGHLIGHT??? - same colour as the Node settings pane's tint
 		if(self.loopy.sidebar.currentPage.target == self){
 			ctx.beginPath();
 			ctx.arc(0, 0, r+40, 0, Math.TAU, false);
-			ctx.fillStyle = HIGHLIGHT_COLOR;
+			ctx.fillStyle = HIGHLIGHT_COLOR_NODE;
 			ctx.fill();
 		}
 

@@ -7,7 +7,12 @@ that I couldn't be arsed to put into separate classes
 
 Math.TAU = Math.PI*2;
 
-window.HIGHLIGHT_COLOR = "rgba(193, 220, 255, 0.6)";
+window.HIGHLIGHT_COLOR = "rgba(193, 220, 255, 0.6)"; // default (e.g. labels)
+
+// Node/Edge selection highlights match their sidebar tint exactly
+// (#sidebar[editing=node]/[editing=edge] in loopy.css) - keep in sync.
+window.HIGHLIGHT_COLOR_NODE = "#d8dfe6";
+window.HIGHLIGHT_COLOR_EDGE = "#e6dcdc";
 
 var isMacLike = navigator.platform.match(/(Mac|iPhone|iPod|iPad)/i)?true:false;
 

@@ -265,10 +265,13 @@ function Sidebar(loopy){
         var page = new SidebarPage();
         page.addComponent(new ComponentButton({
             header: true,
-            label: "back to top",
+            label: "Model settings",
             onclick: function(){
                 self.showPage("Edit");
             }
+        }));
+        page.addComponent(new ComponentHTML({
+            html: "<br><br><b style='font-size:1.2em'>Node attributes</b>"
         }));
 
         // Name and Description are always visible.
@@ -398,10 +401,13 @@ function Sidebar(loopy){
 		var page = new SidebarPage();
 		page.addComponent(new ComponentButton({
 			header: true,
-			label: "back to top",
+			label: "Model settings",
 			onclick: function(){
 				self.showPage("Edit");
 			}
+		}));
+		page.addComponent(new ComponentHTML({
+			html: "<br><br><b style='font-size:1.2em'>Edge attributes</b>"
 		}));
 		page.addComponent("direction", new ComponentSlider({
 			bg: "strength",
@@ -1204,7 +1210,9 @@ function ComponentNodeGroup(config){
 			var swatch = document.createElement("div");
 			swatch.className = "component_node_group_swatch";
 			swatch.style.background = nodeGroups.PALETTE[index];
-			swatch.title = nodeGroups.getName(index);
+			var name = nodeGroups.getName(index);
+			swatch.title = name;
+			swatch.innerHTML = name.trim().charAt(0).toUpperCase();
 			if(index === currentValue){
 				swatch.setAttribute("selected", "yes");
 			}

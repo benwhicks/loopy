@@ -392,17 +392,21 @@ NODE GROUP SWATCH PICKER (Node sidebar page)
 	cursor: pointer;
 	border: 3px solid transparent;
 	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 15px;
+	font-weight: bold;
+	line-height: 1;
+	/* readable regardless of how light/dark the swatch colour is */
+	text-shadow: 0 0 3px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9);
 }
 .component_node_group_swatch[selected=yes]{
 	border-color: #333;
 }
 .component_node_group_clear{
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: #fff;
 	font-size: 18px;
-	line-height: 1;
 }
 
 /**********

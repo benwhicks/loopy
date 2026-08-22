@@ -402,14 +402,14 @@ function Edge(model, config){
 		ctx.translate(fx, fy);
 		ctx.rotate(a);
 
-		// Highlight!
+		// Highlight! - same colour as the Edge settings pane's tint
 		if(self.loopy.sidebar.currentPage.target == self){
 			ctx.save();
 			ctx.translate(lx, ly);
 			ctx.rotate(-a);
 			ctx.beginPath();
 			ctx.arc(0, 5, 60, 0, Math.TAU, false);
-			ctx.fillStyle = HIGHLIGHT_COLOR;
+			ctx.fillStyle = HIGHLIGHT_COLOR_EDGE;
 			ctx.fill();
 			ctx.restore();
 		}
