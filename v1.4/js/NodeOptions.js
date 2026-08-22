@@ -5,13 +5,21 @@ NODE OPTIONS
   pages. Every field EXCEPT a Node's "label" (Name) and "description"
   (Description) is opt-in and OFF by default:
     Node:  Node Type, Node Group, Start Amount, Radius, Gain, Strength
-    Edge:  Relationship Type, Show +/- Label, Signal Attenuation, Signal Speed
+    Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed
 
 IMPORTANT: toggling a field OFF only hides its editing UI in the Sidebar.
 The underlying Node/Edge property is completely untouched - a node with
 "Node Group" turned off still has a hue, still simulates, still renders
 identically. Only the ability to *edit* that field from the sidebar goes
 away.
+
+SPECIAL CASE - "direction" (Edge Polarity): this one also gates whether
+the +/- glyph is drawn on EVERY edge on the canvas (see Edge.js draw()),
+not just the sidebar editing control - turning it on both shows every
+edge's polarity and lets you change it; turning it off hides the glyph
+everywhere but leaves each edge's direction value untouched. Independent
+of this toggle, a negative edge is always drawn dark red (Edge.js), as a
+passive cue that doesn't require the toggle to be on.
 
 Precedence when computing the merged, currently-active visibility state:
   localStorage override (this browser) > diagram default (this file) > off
@@ -23,11 +31,11 @@ function NodeOptions(loopy){
 	var self = this;
 	self.loopy = loopy;
 
-	// Fixed order == settings[] indices 3-8 (node) / 9-12 (edge) in
+	// Fixed order == settings[] indices 3-8 (node) / 9-11 (edge) in
 	// Model.serialize/deserialize, and the checkbox order in the
 	// Sidebar's persistent Options header.
 	self.NODE_KEYS = ["active", "hue", "init", "radius", "gain", "strength"];
-	self.EDGE_KEYS = ["direction", "showLabel", "attenuation", "speedMultiplier"];
+	self.EDGE_KEYS = ["direction", "attenuation", "speedMultiplier"];
 	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS);
 
 	self.storageKey = "loopy_node_options";

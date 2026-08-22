@@ -41,8 +41,7 @@ function Sidebar(loopy){
 			strength: "Strength (Node Quantum)"
 		};
 		var EDGE_FIELD_LABELS = {
-			direction: "Relationship Type",
-			showLabel: "Show +/- Label",
+			direction: "Edge Polarity (+/-)",
 			attenuation: "Signal Attenuation",
 			speedMultiplier: "Signal Speed"
 		};
@@ -359,17 +358,10 @@ function Sidebar(loopy){
 		}));
 		page.addComponent("direction", new ComponentSlider({
 			bg: "strength",
-			label: "<br><br>Relationship Type:",
+			label: "<br><br>Edge Polarity (+/-):",
 			options: [1,-1],
 			oninput: function(value,edge){
 				edge.setDirection(value);
-			}
-		}));
-		page.addComponent("showLabel", new ComponentToggle({
-			label: "Show +/- Label:",
-			oninput: function(value, edge){
-				edge.showLabel = value;
-				publish("model/changed");
 			}
 		}));
 		page.addComponent("attenuation", new ComponentSlider({
@@ -398,7 +390,9 @@ function Sidebar(loopy){
 
 		// Which fields are globally opt-in (off by default) - same pattern
 		// as the Node page. Toggling one off only hides its Sidebar UI.
-		var EDGE_OPTIONAL_KEYS = ["direction", "showLabel", "attenuation", "speedMultiplier"];
+		// "direction" (Edge Polarity) also gates the +/- glyph drawn on
+		// every edge on the canvas - see Edge.js draw().
+		var EDGE_OPTIONAL_KEYS = ["direction", "attenuation", "speedMultiplier"];
 
 		page.updateOptionVisibility = function(){
 			var nodeOptions = loopy.nodeOptions;

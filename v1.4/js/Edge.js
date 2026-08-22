@@ -26,8 +26,7 @@ function Edge(model, config){
 		strength: model.DEFAULT_EDGE_STRENGTH,
 		direction: 1,
 		attenuation: 1, //This is actually 1 - Attenuation
-		speedMultiplier: 1, //this is an edge specific speed multiplier
-		showLabel: false // Hide +/- label by default
+		speedMultiplier: 1 //this is an edge specific speed multiplier
 	});
 
 	self.setDirection = function(value){
@@ -373,7 +372,11 @@ function Edge(model, config){
 
 		// Width & Color
 		ctx.lineWidth = 6*Math.abs(self.strength)-2;
-		if(self.speedMultiplier>=1.5) ctx.strokeStyle = model.COLOUR_EDGE_FAST;
+		// A "-" (balancing) edge is ALWAYS this dark red, as a passive
+		// polarity cue that doesn't depend on the Edge Polarity toggle -
+		// this takes priority over the speed-based colouring below.
+		if(self.direction<0) ctx.strokeStyle = model.COLOUR_EDGE_NEGATIVE;
+		else if(self.speedMultiplier>=1.5) ctx.strokeStyle = model.COLOUR_EDGE_FAST;
 		else if(self.speedMultiplier<=0.68) ctx.strokeStyle = model.COLOUR_EDGE_SLOW;
 		else ctx.strokeStyle = model.COLOUR_EDGE;
 
@@ -415,8 +418,10 @@ function Edge(model, config){
 		// Stroke!
 		ctx.stroke();
 
-		// Draw label (only if showLabel is true)
-		if(self.showLabel){
+		// Draw label - globally on/off via the "Edge Polarity" Options
+		// toggle (loopy.nodeOptions "direction"), not a per-edge setting:
+		// turning it on shows the +/- glyph on every edge at once.
+		if(self.loopy.nodeOptions.get("direction")){
 			ctx.font = "100 60px sans-serif";
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";

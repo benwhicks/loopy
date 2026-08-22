@@ -30,7 +30,7 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 | `Loopy.js` | Top-level controller. Owns mode (edit/play), zoom, save/load, keyboard shortcuts. Entry point: `window.loopy = new Loopy()`. |
 | `Model.js` | Data layer. Owns arrays of `Node`, `Edge`, `Label`. Handles `serialize`/`deserialize` (URL-encoded JSON), `exportToDOT`, canvas drawing loop, and centering/scaling. |
 | `Node.js` | A circular node. Three types: inactive (0), active (1), split (2). Handles signal propagation, draw, kill. |
-| `Edge.js` | A directed arrow between nodes. Carries signals (particles that travel along the edge). Handles arc/curvature, speed, attenuation, +/- label. |
+| `Edge.js` | A directed arrow between nodes. Carries signals (particles that travel along the edge). Handles arc/curvature, speed, attenuation. The +/- polarity glyph is drawn on ALL edges together, gated by the global `NodeOptions` "direction" toggle (not a per-edge setting); a negative-polarity edge is always drawn dark red (`COLOUR_EDGE_NEGATIVE`), regardless of that toggle or speed colouring. |
 | `SplitNodeRenderer.js` | Renders split nodes (type 2) with separate top/bottom labels and a divider line. |
 | `Sidebar.js` | Right-hand panel UI for editing selected nodes/edges/labels. Built from `ComponentSlider`, `ComponentInput`, `ComponentButton`, `ComponentNodeGroup` components. Also owns a persistent "Options" section (`#sidebar_options`, collapsed by default) pinned above every page, with Node/Edge field toggles and the Node Groups editor. |
 | `Toolbar.js` | Top toolbar: tool selection (Ink, Drag, Erase, Label). |
@@ -42,7 +42,7 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 | `Labeller.js` | Label tool — creates free-floating text labels. |
 | `History.js` | Undo/redo stack using snapshots of the full model state. Also persists history to `localStorage`. |
 | `HistoryTracker.js` | Generates human-readable descriptions of model changes (used for the action log). |
-| `NodeOptions.js` | Global, per-field visibility toggles for the Node and Edge sidebar pages (Node: Node Type, Node Group, Start Amount, Radius, Gain, Strength; Edge: Relationship Type, Show +/- Label, Signal Attenuation, Signal Speed — all off by default; a Node's Name and Description are always shown). Merges a diagram-serialized default with a per-browser `localStorage` override and publishes `settings/changed` on change. |
+| `NodeOptions.js` | Global, per-field visibility toggles for the Node and Edge sidebar pages (Node: Node Type, Node Group, Start Amount, Radius, Gain, Strength; Edge: Edge Polarity (+/-), Signal Attenuation, Signal Speed — all off by default; a Node's Name and Description are always shown). Merges a diagram-serialized default with a per-browser `localStorage` override and publishes `settings/changed` on change. The "direction" (Edge Polarity) key is special: it also controls whether the +/- glyph is drawn on every edge on the canvas — see `Edge.js`. |
 | `NodeGroups.js` | Diagram-level list of 1-8 named colour groups (a node's `hue` is an index into this list), using the fixed, colour-blind-safe Okabe-Ito palette — group *N* always uses palette colour *N*; only a group's name and the group count are editable. Publishes `groups/changed` on add/remove/load; `Model.js` listens to rebuild `COLOUR_NODE_LIST`. |
 | `Mouse.js` | Normalises mouse/touch events; publishes `mousemove`, `mousedown`, `mouseup`, `mouseclick`. |
 | `Key.js` | Keyboard handler; publishes `key/undo`, `key/redo`, `key/zoomin`, etc. |
@@ -71,9 +71,9 @@ Model state is stored as a URL-encoded JSON array passed in the `?data=` query p
 
 Node fields (by index): `id, x, y, init, label(encoded), hue, radius, gain, strength, active, topLabel(encoded), bottomLabel(encoded), description(encoded)`
 
-Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation], showLabel(0|1)`
+Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation]`
 
-`settings[]` holds `[MAX_SIGNAL_AGE, MAX_SIGNALS_PER_EDGE, MAX_SIGNALS, showType, showGroup, showStartAmount, showRadius, showGain, showStrength, showRelationshipType, showEdgeLabel, showAttenuation, showSpeed]` — entries 3+ are the diagram-embedded defaults for `NodeOptions.js`'s toggles (6 node keys then 4 edge keys) and may be absent/short in links saved by older versions (treated as "no diagram default" rather than an error).
+`settings[]` holds `[MAX_SIGNAL_AGE, MAX_SIGNALS_PER_EDGE, MAX_SIGNALS, showType, showGroup, showStartAmount, showRadius, showGain, showStrength, showEdgePolarity, showAttenuation, showSpeed]` — entries 3+ are the diagram-embedded defaults for `NodeOptions.js`'s toggles (6 node keys then 3 edge keys) and may be absent/short in links saved by older versions (treated as "no diagram default" rather than an error).
 
 `groupNames[]` is a flat array of Node Group names (e.g. `["Risks","Mitigations"]`); the group count is `groupNames.length` (1-8) and each name's colour is `NodeGroups.PALETTE[index]` (fixed, not stored). Absent in older links, which fall back to the default 4 groups.
 

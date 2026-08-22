@@ -43,6 +43,10 @@ function Model(loopy){
 	self.COLOUR_EDGE = "rgba(102,102,102,1)";
 	self.COLOUR_EDGE_FAST = "rgba(51,171,95,1)";
 	self.COLOUR_EDGE_SLOW = "rgba(178,34,34,1)";
+	// Always-visible polarity cue: a "-" (balancing) edge is always drawn
+	// in this very dark red, regardless of speed colouring or whether the
+	// Edge Polarity toggle is on - see Edge.js draw().
+	self.COLOUR_EDGE_NEGATIVE = "rgba(75,0,0,1)";
 
 	// Create canvas & context
 	var canvas = _createCanvas();
@@ -398,7 +402,6 @@ function Model(loopy){
 			// 3 - strength
 			// 4 - speedMultiplier
 			// 5 - rotation (optional)
-			// 6 - showLabel (optional)
 			var dataEdge = [
 				edge.from.id,
 				edge.to.id,
@@ -409,8 +412,6 @@ function Model(loopy){
 			if(dataEdge.f==dataEdge.t){
 				dataEdge.push(Math.round(edge.rotation));
 			}
-			// Always add showLabel as last element (default false)
-			dataEdge.push(edge.showLabel ? 1 : 0);
 			edges.push(dataEdge);
 		}
 		data.push(edges);
@@ -503,9 +504,6 @@ function Model(loopy){
 				speedMultiplier: edge[4]
 			};
 			if(edge[5]) edgeConfig.rotation=edge[5];
-			// showLabel: check last element, default to false
-			var lastIdx = edge.length - 1;
-			edgeConfig.showLabel = (edge[lastIdx] === 1);
 			self.addEdge(edgeConfig);
 		}
 
