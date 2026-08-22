@@ -62,7 +62,7 @@ function Toolbar(loopy){
 	zoomInBtn.className = "toolbar_button";
 	zoomInBtn.style.backgroundImage = "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI3IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSI4IiB5MT0iMTEiIHgyPSIxNCIgeTI9IjExIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSIxMSIgeTE9IjgiIHgyPSIxMSIgeTI9IjE0IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSIxNi41IiB5MT0iMTYuNSIgeDI9IjIxIiB5Mj0iMjEiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+')";
 	zoomInBtn.style.backgroundSize = "contain";
-	zoomInBtn.setAttribute("data-balloon", "Zoom In (Ctrl +)");
+	zoomInBtn.setAttribute("data-balloon", "Zoom In");
 	zoomInBtn.setAttribute("data-balloon-pos", "right");
 	zoomInBtn.onclick = function(){ loopy.zoomIn(); };
 	self.dom.appendChild(zoomInBtn);
@@ -72,7 +72,7 @@ function Toolbar(loopy){
 	zoomOutBtn.className = "toolbar_button";
 	zoomOutBtn.style.backgroundImage = "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIxMSIgY3k9IjExIiByPSI3IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSI4IiB5MT0iMTEiIHgyPSIxNCIgeTI9IjExIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIvPjxsaW5lIHgxPSIxNi41IiB5MT0iMTYuNSIgeDI9IjIxIiB5Mj0iMjEiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+')";
 	zoomOutBtn.style.backgroundSize = "contain";
-	zoomOutBtn.setAttribute("data-balloon", "Zoom Out (Ctrl -)");
+	zoomOutBtn.setAttribute("data-balloon", "Zoom Out");
 	zoomOutBtn.setAttribute("data-balloon-pos", "right");
 	zoomOutBtn.onclick = function(){ loopy.zoomOut(); };
 	self.dom.appendChild(zoomOutBtn);
@@ -86,7 +86,7 @@ function Toolbar(loopy){
 	zoomResetBtn.style.lineHeight = "55px";
 	zoomResetBtn.style.textAlign = "center";
 	zoomResetBtn.style.color = "#000";
-	zoomResetBtn.setAttribute("data-balloon", "Reset Zoom (Ctrl 0)");
+	zoomResetBtn.setAttribute("data-balloon", "Reset Zoom");
 	zoomResetBtn.setAttribute("data-balloon-pos", "right");
 	zoomResetBtn.onclick = function(){ loopy.zoomReset(); };
 	self.dom.appendChild(zoomResetBtn);

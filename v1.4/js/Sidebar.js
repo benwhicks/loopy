@@ -535,7 +535,7 @@ function Sidebar(loopy){
 			// ZOOM INDICATOR HERE
 			"<div style='text-align:left; color:black; font-size:20px'>"+
 			"Zoom: <span id='zoom-level'>100%</span><br>"+
-			"<span style='font-size:13px'>Ctrl+Scroll, Ctril+ +/- or use toolbar</span>"+
+			"<span style='font-size:13px'>Ctrl+Scroll or use toolbar</span>"+
 			"</div>"+
 
 			"<hr/>"

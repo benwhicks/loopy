@@ -445,24 +445,9 @@ function Loopy(config){
 		}
 	});
 
-	//Zoom
-	subscribe("key/zoomin", function(){
-		if(Key.control){ // Ctrl + or Cmd +
-			self.zoomIn();
-		}
-	});
-
-	subscribe("key/zoomout", function(){
-		if(Key.control){ // Ctrl - or Cmd -
-			self.zoomOut();
-		}
-	});
-
-	subscribe("key/zoomreset", function(){
-		if(Key.control){ // Ctrl 0 or Cmd 0
-			self.zoomReset();
-		}
-	});
+	// No keyboard zoom shortcuts (Ctrl +/-/0) - removed, since they
+	// clashed with the browser's own page-zoom shortcuts. Zoom via
+	// Ctrl+Scroll or the toolbar buttons instead.
 
 	// NOT DIRTY, THANKS
 	self.dirty = false;

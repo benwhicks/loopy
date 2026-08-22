@@ -17,12 +17,11 @@
 		90: "undo",  // (Z) - Undo
 		89: "redo",  // (Y) - Redo
 
-		107: "zoomin",   // Numpad +
-		109: "zoomout",  // Numpad -
-		187: "zoomin",   // Regular + (with shift)
-		189: "zoomout",  // Regular -
-		48: "zoomreset", // 0
-		96: "zoomreset", // Numpad 0
+		// No Ctrl/Cmd +, -, or 0 here on purpose: those are the browser's
+		// own zoom shortcuts, and this app used to hijack them (requiring
+		// Ctrl/Cmd to actually zoom, same as undo/redo below) - which
+		// clashed with the browser's native page zoom. Zooming LOOPY's
+		// canvas is still available via Ctrl+Scroll or the toolbar buttons.
 	};
 
 	// Helper: check if key should be handled by the app
