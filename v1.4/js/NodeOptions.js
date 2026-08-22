@@ -5,7 +5,7 @@ NODE OPTIONS
   pages. Every field EXCEPT a Node's "label" (Name) and "description"
   (Description) is opt-in and OFF by default:
     Node:  Node Type, Node Group, Start Amount, Radius, Gain, Strength
-    Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed
+    Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed, Edge Type
 
 IMPORTANT: toggling a field OFF only hides its editing UI in the Sidebar.
 The underlying Node/Edge property is completely untouched - a node with
@@ -21,6 +21,11 @@ everywhere but leaves each edge's direction value untouched. Independent
 of this toggle, a negative edge is always drawn dark red (Edge.js), as a
 passive cue that doesn't require the toggle to be on.
 
+SPECIAL CASE - "edgeType": likewise only gates the sidebar's Edge Type
+picker. Its visuals (dash pattern, arrowheads, the "?" glyph) and its
+effect on simulation (a "questionable" edge never delivers its signal)
+always apply regardless of this toggle - see Edge.js.
+
 Precedence when computing the merged, currently-active visibility state:
   localStorage override (this browser) > diagram default (this file) > off
 
@@ -35,7 +40,7 @@ function NodeOptions(loopy){
 	// Model.serialize/deserialize, and the checkbox order in the
 	// Sidebar's persistent Options header.
 	self.NODE_KEYS = ["active", "hue", "init", "radius", "gain", "strength"];
-	self.EDGE_KEYS = ["direction", "attenuation", "speedMultiplier"];
+	self.EDGE_KEYS = ["direction", "attenuation", "speedMultiplier", "edgeType"];
 	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS);
 
 	self.storageKey = "loopy_node_options";

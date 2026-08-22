@@ -11,6 +11,9 @@ NODE GROUPS
 - Serialized with the diagram (just the array of names; the group
   count is implied by the array's length) so a shared link carries the
   author's group names along with it.
+- A node can also be explicitly ungrouped (hue === null), drawn in a
+  fixed grey (NULL_COLOUR). This is what a node reverts to if its
+  group is removed via removeLastGroup(), ready for manual reassignment.
 
 **********************************/
 
@@ -34,6 +37,11 @@ function NodeGroups(loopy){
 	self.MIN_GROUPS = 1;
 	self.MAX_GROUPS = self.PALETTE.length; // 8
 
+	// A node can also be explicitly ungrouped ("hue" === null) - shown in
+	// this grey, not part of self.groups/the palette. This is also what
+	// a node reverts to when its group is removed entirely.
+	self.NULL_COLOUR = "#999999";
+
 	self._defaultGroups = function(){
 		return [
 			{name: "Group 1"},
@@ -54,6 +62,7 @@ function NodeGroups(loopy){
 		for(var i=0; i<self.groups.length; i++){
 			list[i] = self.PALETTE[i];
 		}
+		list[null] = self.NULL_COLOUR; // node.hue === null -> ungrouped, grey
 		return list;
 	};
 
@@ -82,7 +91,16 @@ function NodeGroups(loopy){
 
 	self.removeLastGroup = function(){
 		if(self.groups.length <= self.MIN_GROUPS) return;
+		var removedIndex = self.groups.length - 1;
 		self.groups.pop();
+		// Any node currently in the removed group becomes ungrouped
+		// (grey), ready for manual reassignment - never silently
+		// remapped to a different, still-existing group.
+		if(self.loopy.model){
+			self.loopy.model.nodes.forEach(function(node){
+				if(node.hue === removedIndex) node.hue = null;
+			});
+		}
 		publish("model/changed");
 		publish("groups/changed");
 	};

@@ -57,7 +57,8 @@ function Sidebar(loopy){
 		var EDGE_FIELD_LABELS = {
 			direction: "Edge Polarity (+/-)",
 			attenuation: "Signal Attenuation",
-			speedMultiplier: "Signal Speed"
+			speedMultiplier: "Signal Speed",
+			edgeType: "Edge Type"
 		};
 
 		var container = document.createElement("div");
@@ -67,7 +68,7 @@ function Sidebar(loopy){
 		toggleRow.className = "options_toggle";
 		var collapsed = true;
 		var setToggleLabel = function(){
-			toggleRow.innerHTML = (collapsed ? "&#9656;" : "&#9662;") + " Options";
+			toggleRow.innerHTML = (collapsed ? "&#9656;" : "&#9662;") + " Model options";
 		};
 		setToggleLabel();
 		container.appendChild(toggleRow);
@@ -141,6 +142,7 @@ function Sidebar(loopy){
 		container.appendChild(groupsList);
 
 		var groupsButtons = document.createElement("div");
+		groupsButtons.style.marginTop = "12px";
 		var addGroupBtn = document.createElement("span");
 		addGroupBtn.className = "mini_button";
 		addGroupBtn.innerHTML = "+ add group";
@@ -207,34 +209,18 @@ function Sidebar(loopy){
             }
         }));
 
-        // Standard label (shown when NOT split)
+        // Name and Description are always visible.
         page.addComponent("label", new ComponentInput({
             label: "<br><br>Name:"
         }));
-
-        // Split node labels (shown when split)
-        page.addComponent("topLabel", new ComponentInput({
-            label: "<br><br>Top Name:"
-        }));
-        page.addComponent("bottomLabel", new ComponentInput({
-            label: "Bottom Name:"
-        }));
-
-        // Description - always visible, alongside Name
         page.addComponent("description", new ComponentInput({
             label: "<br>Description:",
             textarea: true
         }));
 
-        page.addComponent("active", new ComponentSlider({
-            bg: "type",
-            label: "Node Type:",
-            options: [0,1,2],
-            oninput: function(value){
-                Node.active = value;
-                // Toggle label visibility based on type
-                page.updateLabelVisibility();
-            }
+        // Just two types now: simulable (default) or non-simulable.
+        page.addComponent("active", new ComponentNodeType({
+            label: "Node Type:"
         }));
         page.addComponent("hue", new ComponentNodeGroup({
             label: "Node Group:"
@@ -278,31 +264,6 @@ function Sidebar(loopy){
                 "settings - accessed by clicking in an empty space in the graph.</div>"
         }));
 
-        // Method to toggle label visibility (split node top/bottom vs. name)
-        // Only reachable at all when the "Node Type" option is enabled -
-        // this hides sidebar UI only; node.active and its rendering are
-        // untouched either way.
-        page.updateLabelVisibility = function(){
-            var node = page.target;
-            if(!node) return;
-
-            var typeEnabled = loopy.nodeOptions ? loopy.nodeOptions.get("active") : false;
-            var isSplit = (node.active === 2) && typeEnabled;
-            var labelComp = page.getComponent("label");
-            var topComp = page.getComponent("topLabel");
-            var bottomComp = page.getComponent("bottomLabel");
-
-            if(labelComp && labelComp.dom){
-                labelComp.dom.style.display = isSplit ? "none" : "block";
-            }
-            if(topComp && topComp.dom){
-                topComp.dom.style.display = isSplit ? "block" : "none";
-            }
-            if(bottomComp && bottomComp.dom){
-                bottomComp.dom.style.display = isSplit ? "block" : "none";
-            }
-        };
-
         // Which fields are globally opt-in (off by default). Toggling one
         // off only hides its Sidebar UI - the underlying Node property is
         // untouched and the node continues to simulate/render normally.
@@ -322,8 +283,6 @@ function Sidebar(loopy){
                 }
             }
             noOptionsHint.dom.style.display = anyVisible ? "none" : "block";
-            // Split-label reachability depends on the "active" (Node Type) toggle
-            page.updateLabelVisibility();
         };
 
         // Initialize immediately so there's no flash of wrongly-visible
@@ -349,12 +308,6 @@ function Sidebar(loopy){
             page.getComponent("strength").setBGColor(color);
             page.getComponent("active").setBGColor(color);
 
-            // Initialize split labels if needed
-            if(node.active === 2){
-                if(node.topLabel === undefined) node.topLabel = node.label || "?";
-                if(node.bottomLabel === undefined) node.bottomLabel = "?";
-            }
-
             // Update visibility
             page.updateOptionVisibility();
 
@@ -363,11 +316,7 @@ function Sidebar(loopy){
                 page._isInitialEdit = false;
                 var name = node.label;
                 if(name=="" || name=="?"){
-                    if(node.active === 2){
-                        page.getComponent("topLabel").select();
-                    } else {
-                        page.getComponent("label").select();
-                    }
+                    page.getComponent("label").select();
                 }
             }
         };
@@ -416,6 +365,9 @@ function Sidebar(loopy){
 				Edge.speedMultiplier = value;
 			}
 		}));
+		page.addComponent("edgeType", new ComponentEdgeType({
+			label: "<br>Edge Type:"
+		}));
 		// Shown instead, when every optional field above is toggled off.
 		var noOptionsHint = page.addComponent(new ComponentHTML({
 			html: "<div class='sidebar_hint'>These are editable through the global "+
@@ -434,7 +386,7 @@ function Sidebar(loopy){
 		// as the Node page. Toggling one off only hides its Sidebar UI.
 		// "direction" (Edge Polarity) also gates the +/- glyph drawn on
 		// every edge on the canvas - see Edge.js draw().
-		var EDGE_OPTIONAL_KEYS = ["direction", "attenuation", "speedMultiplier"];
+		var EDGE_OPTIONAL_KEYS = ["direction", "attenuation", "speedMultiplier", "edgeType"];
 
 		page.updateOptionVisibility = function(){
 			var nodeOptions = loopy.nodeOptions;
@@ -1193,6 +1145,22 @@ function ComponentNodeGroup(config){
 			};
 			row.appendChild(swatch);
 		});
+
+		// "Clear node group" - reverts to ungrouped (grey), same fixed
+		// value a node gets when its group is removed entirely.
+		var clearSwatch = document.createElement("div");
+		clearSwatch.className = "component_node_group_swatch component_node_group_clear";
+		clearSwatch.style.background = nodeGroups.NULL_COLOUR;
+		clearSwatch.title = "Clear node group";
+		clearSwatch.innerHTML = "&times;";
+		if(currentValue === null || currentValue === undefined){
+			clearSwatch.setAttribute("selected", "yes");
+		}
+		clearSwatch.onclick = function(){
+			self.setValue(null);
+			self.show();
+		};
+		row.appendChild(clearSwatch);
 	};
 
 	// Group count/colours changed (add/remove group) - re-render if a
@@ -1200,5 +1168,103 @@ function ComponentNodeGroup(config){
 	subscribe("groups/changed", function(){
 		if(self.page && self.page.target) self.show();
 	});
+
+}
+
+// Node Type picker: exactly two options (no more "split") - simulable
+// (passes signal, has up/down controls in Play mode) or non-simulable
+// (does not pass signal). propName is "active": 1 or 0.
+function ComponentNodeType(config){
+
+	// Inherit
+	var self = this;
+	Component.apply(self);
+
+	self.dom = document.createElement("div");
+	var label = _createLabel(config.label);
+	self.dom.appendChild(label);
+
+	var row = document.createElement("div");
+	row.className = "component_node_group_row";
+	self.dom.appendChild(row);
+
+	var OPTIONS = [
+		{value: 1, glyph: "&#8645;", title: "Simulable - passes signal, has up/down controls in Play mode"},
+		{value: 0, glyph: "&#10005;", title: "Non-simulable - does not pass signal"}
+	];
+
+	var buttons = [];
+	OPTIONS.forEach(function(opt){
+		var btn = document.createElement("div");
+		btn.className = "component_node_type_swatch";
+		btn.innerHTML = opt.glyph;
+		btn.title = opt.title;
+		btn.onclick = function(){
+			self.setValue(opt.value);
+			self.show();
+		};
+		row.appendChild(btn);
+		buttons.push(btn);
+	});
+
+	self.show = function(){
+		var currentValue = self.getValue();
+		OPTIONS.forEach(function(opt, i){
+			buttons[i].setAttribute("selected", (opt.value === currentValue) ? "yes" : "no");
+		});
+	};
+
+	// Tint, same as the other node-editing sliders (Sidebar's onedit()).
+	self.setBGColor = function(color){
+		buttons.forEach(function(btn){ btn.style.background = color; });
+	};
+
+}
+
+// Edge Type picker: directed (default) / bi-directed / questionable.
+// propName is "edgeType". The chosen type's visuals (dash pattern,
+// arrowheads, "?" glyph) always render on the canvas regardless of
+// whether this field is toggled visible - only the ability to *change*
+// it from the sidebar is gated, same as every other optional field.
+function ComponentEdgeType(config){
+
+	// Inherit
+	var self = this;
+	Component.apply(self);
+
+	self.dom = document.createElement("div");
+	var label = _createLabel(config.label);
+	self.dom.appendChild(label);
+
+	var row = document.createElement("div");
+	row.className = "component_edge_type_row";
+	self.dom.appendChild(row);
+
+	var OPTIONS = [
+		{value: "directed", label: "Directed", title: "Solid line, single arrowhead (default)"},
+		{value: "bi-directed", label: "Bi-directed", title: "Dashed line, arrowheads at both ends"},
+		{value: "questionable", label: "Questionable", title: "Dotted line with a \"?\" - does not pass signal"}
+	];
+
+	var buttons = [];
+	OPTIONS.forEach(function(opt){
+		var btn = document.createElement("div");
+		btn.className = "component_edge_type_pill";
+		btn.innerHTML = opt.label;
+		btn.title = opt.title;
+		btn.onclick = function(){
+			self.setValue(opt.value);
+			self.show();
+		};
+		row.appendChild(btn);
+		buttons.push(btn);
+	});
+
+	self.show = function(){
+		var currentValue = self.getValue();
+		OPTIONS.forEach(function(opt, i){
+			buttons[i].setAttribute("selected", (opt.value === currentValue) ? "yes" : "no");
+		});
+	};
 
 }

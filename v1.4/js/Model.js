@@ -157,7 +157,7 @@ function Model(loopy){
 					direction:       edge.direction,
 					attenuation:     edge.attenuation,
 					speedMultiplier: edge.speedMultiplier,
-					showLabel:       edge.showLabel
+					edgeType:        edge.edgeType
 				});
 			}
 		}
@@ -198,7 +198,7 @@ function Model(loopy){
 				direction:       ec.direction,
 				attenuation:     ec.attenuation,
 				speedMultiplier: ec.speedMultiplier,
-				showLabel:       ec.showLabel
+				edgeType:        ec.edgeType
 			});
 		}
 	};
@@ -402,6 +402,7 @@ function Model(loopy){
 			// 3 - strength
 			// 4 - speedMultiplier
 			// 5 - rotation (optional)
+			// 6 - edgeType ("directed"/"bi-directed"/"questionable")
 			var dataEdge = [
 				edge.from.id,
 				edge.to.id,
@@ -412,6 +413,7 @@ function Model(loopy){
 			if(dataEdge.f==dataEdge.t){
 				dataEdge.push(Math.round(edge.rotation));
 			}
+			dataEdge.push(edge.edgeType || "directed");
 			edges.push(dataEdge);
 		}
 		data.push(edges);
@@ -504,6 +506,8 @@ function Model(loopy){
 				speedMultiplier: edge[4]
 			};
 			if(edge[5]) edgeConfig.rotation=edge[5];
+			// Absent in older links -> "directed" (matches their look exactly).
+			edgeConfig.edgeType = edge[6] || "directed";
 			self.addEdge(edgeConfig);
 		}
 

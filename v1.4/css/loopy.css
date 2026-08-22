@@ -396,6 +396,62 @@ NODE GROUP SWATCH PICKER (Node sidebar page)
 .component_node_group_swatch[selected=yes]{
 	border-color: #333;
 }
+.component_node_group_clear{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-size: 18px;
+	line-height: 1;
+}
+
+/**********
+NODE TYPE PICKER (Node sidebar page)
+**********/
+
+.component_node_type_swatch{
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	cursor: pointer;
+	border: 3px solid transparent;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 24px;
+	color: #333;
+}
+.component_node_type_swatch[selected=yes]{
+	border-color: #333;
+}
+
+/**********
+EDGE TYPE PICKER (Edge sidebar page)
+**********/
+
+.component_edge_type_row{
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.component_edge_type_pill{
+	background: #999;
+	color: #fff;
+	padding: 6px 10px;
+	border-radius: 3px;
+	font-size: 15px;
+	cursor: pointer;
+	border: 2px solid transparent;
+	box-sizing: border-box;
+}
+.component_edge_type_pill:hover{
+	background: #aaa;
+}
+.component_edge_type_pill[selected=yes]{
+	background: #666;
+	border-color: #333;
+}
 
 
 

@@ -26,7 +26,14 @@ function Edge(model, config){
 		strength: model.DEFAULT_EDGE_STRENGTH,
 		direction: 1,
 		attenuation: 1, //This is actually 1 - Attenuation
-		speedMultiplier: 1 //this is an edge specific speed multiplier
+		speedMultiplier: 1, //this is an edge specific speed multiplier
+		// "directed" (solid, single arrowhead, default), "bi-directed"
+		// (dashed, arrowheads at both ends), or "questionable" (dotted,
+		// "?" glyph, never delivers its signal). Visuals + the signal
+		// block for "questionable" always apply - see draw()/updateSignals()
+		// below - independent of the "Edge Type" NodeOptions toggle,
+		// which only gates the sidebar picker.
+		edgeType: "directed"
 	});
 
 	self.setDirection = function(value){
@@ -116,9 +123,13 @@ function Edge(model, config){
 		var lastSignal = self.signals[self.signals.length-1];
 		while(lastSignal && lastSignal.position>=1){
 
-			// Actually pass it along
+			// Actually pass it along - unless this edge is "questionable",
+			// which still shows the signal travelling (visual continuity)
+			// but never actually delivers it.
 			lastSignal.delta *= self.strength; // flip at the end only!
-			self.to.takeSignal(lastSignal);
+			if(self.edgeType !== "questionable"){
+				self.to.takeSignal(lastSignal);
+			}
 
 			// Pop it, move on down
 			self.removeSignal(lastSignal);
@@ -217,7 +228,7 @@ function Edge(model, config){
 		arrowBuffer, arrowDistance, arrowAngle, beginDistance, beginAngle,
 		startAngle, endAngle,
 		y2, begin, end,
-		arrowLength, ax, ay, aa,
+		arrowLength, ax, ay, aa, bx, by, ba,
 		labelAngle, lx, ly, labelBuffer; // BECAUSE I'VE LOST CONTROL OF MY LIFE.
 	self.update = function(speed){
 
@@ -279,6 +290,12 @@ function Edge(model, config){
 		ax = w/2 + Math.cos(end)*r;
 		ay = y2 + Math.sin(end)*r;
 		aa = end + Math.TAU/4;
+
+		// Tail arrowhead (only drawn for "bi-directed" edges) - same
+		// construction, mirrored to the "begin" end, pointing backward.
+		bx = w/2 + Math.cos(begin)*r;
+		by = y2 + Math.sin(begin)*r;
+		ba = begin - Math.TAU/4;
 
 		// My label is...
 		var s = self.strength;
@@ -397,15 +414,25 @@ function Edge(model, config){
 			ctx.restore();
 		}
 
-		// Arc it!
-		ctx.beginPath();
-		if(self.arc>0){
-			ctx.arc(w/2, y2, r, startAngle, end, false);
-		}else{
-			ctx.arc(w/2, y2, r, -startAngle, end, true);
-		}
+		// Arc it! Line style always reflects edgeType, regardless of the
+		// "Edge Type" toggle - only the sidebar's ABILITY TO CHANGE it is
+		// gated, same pattern as the dark-red negative-polarity colouring.
+		// "bi-directed" starts the line at the buffered "begin" point (so
+		// it doesn't run through the tail arrowhead below); the other two
+		// types keep the original unbuffered start, right at the node.
+		var isBiDirected = (self.edgeType === "bi-directed");
+		var arcStart = isBiDirected ? begin : (self.arc>0 ? startAngle : -startAngle);
+		if(self.edgeType === "bi-directed") ctx.setLineDash([20,12]);
+		else if(self.edgeType === "questionable") ctx.setLineDash([2,10]);
+		else ctx.setLineDash([]);
 
-		// Arrow HEAD!
+		ctx.beginPath();
+		ctx.arc(w/2, y2, r, arcStart, end, self.arc<0);
+		ctx.stroke();
+		ctx.setLineDash([]); // never let dashing leak into the arrowhead(s) below
+
+		// Arrow HEAD (at "to") - always drawn.
+		ctx.beginPath();
 		ctx.save();
 		ctx.translate(ax, ay);
 		if(self.arc<0) ctx.scale(-1,-1);
@@ -414,9 +441,21 @@ function Edge(model, config){
 		ctx.lineTo(0,0);
 		ctx.lineTo(-arrowLength, arrowLength);
 		ctx.restore();
-
-		// Stroke!
 		ctx.stroke();
+
+		// Arrow TAIL (at "from") - "bi-directed" only.
+		if(isBiDirected){
+			ctx.beginPath();
+			ctx.save();
+			ctx.translate(bx, by);
+			if(self.arc<0) ctx.scale(-1,-1);
+			ctx.rotate(ba);
+			ctx.moveTo(-arrowLength, -arrowLength);
+			ctx.lineTo(0,0);
+			ctx.lineTo(-arrowLength, arrowLength);
+			ctx.restore();
+			ctx.stroke();
+		}
 
 		// Draw label - globally on/off via the "Edge Polarity" Options
 		// toggle (loopy.nodeOptions "direction"), not a per-edge setting:
@@ -430,6 +469,22 @@ function Edge(model, config){
 			ctx.rotate(-a);
 			ctx.fillStyle = model.COLOUR_EDGE_TEXT;
 			ctx.fillText(self.label, 0, 0);
+			ctx.restore();
+		}
+
+		// "?" for a "questionable" edge - always shown, independent of
+		// the Edge Polarity toggle above (this is a type marker, not a
+		// polarity value).
+		if(self.edgeType === "questionable"){
+			var qPos = self.getPositionAlongArrow(0.3);
+			ctx.font = "100 60px sans-serif";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.save();
+			ctx.translate(qPos.x, qPos.y);
+			ctx.rotate(-a);
+			ctx.fillStyle = model.COLOUR_EDGE_TEXT;
+			ctx.fillText("?", 0, 0);
 			ctx.restore();
 		}
 

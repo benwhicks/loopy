@@ -29,10 +29,10 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 |------|------|
 | `Loopy.js` | Top-level controller. Owns mode (edit/play), zoom, save/load, keyboard shortcuts. Entry point: `window.loopy = new Loopy()`. |
 | `Model.js` | Data layer. Owns arrays of `Node`, `Edge`, `Label`. Handles `serialize`/`deserialize` (URL-encoded JSON), `exportToDOT`, canvas drawing loop, and centering/scaling. |
-| `Node.js` | A circular node. Three types: inactive (0), active (1), split (2). Handles signal propagation, draw, kill. |
-| `Edge.js` | A directed arrow between nodes. Carries signals (particles that travel along the edge). Handles arc/curvature, speed, attenuation. The +/- polarity glyph is drawn on ALL edges together, gated by the global `NodeOptions` "direction" toggle (not a per-edge setting); a negative-polarity edge is always drawn dark red (`COLOUR_EDGE_NEGATIVE`), regardless of that toggle or speed colouring. |
-| `SplitNodeRenderer.js` | Renders split nodes (type 2) with separate top/bottom labels and a divider line. |
-| `Sidebar.js` | Right-hand panel UI for editing selected nodes/edges/labels. Built from `ComponentSlider`, `ComponentInput`, `ComponentButton`, `ComponentNodeGroup` components. Also owns a persistent "Options" section (`#sidebar_options`, collapsed by default) pinned above every page, with Node/Edge field toggles and the Node Groups editor. |
+| `Node.js` | A circular node. `active`: 0 = non-simulable, 1 = simulable (default). `2` (split) is retired from the UI but still renders via `SplitNodeRenderer.js` for old saved links. Handles signal propagation, draw, kill. |
+| `Edge.js` | A directed arrow between nodes. Carries signals (particles that travel along the edge). Handles arc/curvature, speed, attenuation. The +/- polarity glyph is drawn on ALL edges together, gated by the global `NodeOptions` "direction" toggle (not a per-edge setting); a negative-polarity edge is always drawn dark red (`COLOUR_EDGE_NEGATIVE`), regardless of that toggle or speed colouring. `edgeType` ("directed"/"bi-directed"/"questionable") always controls line style (solid/dashed/dotted), arrowhead count, and the "?" glyph, regardless of the "Edge Type" toggle; a "questionable" edge never delivers its signal. |
+| `SplitNodeRenderer.js` | Renders split nodes (legacy `active===2` only - no longer creatable) with separate top/bottom labels and a divider line. |
+| `Sidebar.js` | Right-hand panel UI. Shows ONLY the selected node's/edge's own fields (per `NodeOptions`) when something is selected - `#sidebar` gets an `editing="node"/"edge"` attribute (tinting the background) via a wrapped `showPage`. When nothing is selected (the "Edit" page, reached by clicking empty canvas space), it shows the title/links, a collapsible "Model options" section (Node/Edge field toggles), the Node Groups editor, export controls, a "clear graph" button, and credits — in that order. Built from `ComponentSlider`, `ComponentInput`, `ComponentButton`, `ComponentNodeGroup`, `ComponentNodeType`, `ComponentEdgeType` components. |
 | `Toolbar.js` | Top toolbar: tool selection (Ink, Drag, Erase, Label). |
 | `PlayControls.js` | Bottom bar: play/edit mode toggle. |
 | `Modal.js` | Overlay modal used for share/embed dialogs and help pages. |
@@ -42,8 +42,8 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 | `Labeller.js` | Label tool — creates free-floating text labels. |
 | `History.js` | Undo/redo stack using snapshots of the full model state. Also persists history to `localStorage`. |
 | `HistoryTracker.js` | Generates human-readable descriptions of model changes (used for the action log). |
-| `NodeOptions.js` | Global, per-field visibility toggles for the Node and Edge sidebar pages (Node: Node Type, Node Group, Start Amount, Radius, Gain, Strength; Edge: Edge Polarity (+/-), Signal Attenuation, Signal Speed — all off by default; a Node's Name and Description are always shown). Merges a diagram-serialized default with a per-browser `localStorage` override and publishes `settings/changed` on change. The "direction" (Edge Polarity) key is special: it also controls whether the +/- glyph is drawn on every edge on the canvas — see `Edge.js`. |
-| `NodeGroups.js` | Diagram-level list of 1-8 named colour groups (a node's `hue` is an index into this list), using the fixed, colour-blind-safe Okabe-Ito palette — group *N* always uses palette colour *N*; only a group's name and the group count are editable. Publishes `groups/changed` on add/remove/load; `Model.js` listens to rebuild `COLOUR_NODE_LIST`. |
+| `NodeOptions.js` | Global, per-field visibility toggles for the Node and Edge sidebar pages (Node: Node Type, Node Group, Start Amount, Radius, Gain, Strength; Edge: Edge Polarity (+/-), Signal Attenuation, Signal Speed, Edge Type — all off by default; a Node's Name and Description are always shown). Merges a diagram-serialized default with a per-browser `localStorage` override and publishes `settings/changed` on change. "direction" (Edge Polarity) and "edgeType" (Edge Type) are special: their canvas visuals (and, for edgeType, simulation effect) always apply regardless of this toggle — see `Edge.js`. |
+| `NodeGroups.js` | Diagram-level list of 1-8 named colour groups (a node's `hue` is an index into this list), using the fixed, colour-blind-safe Okabe-Ito palette — group *N* always uses palette colour *N*; only a group's name and the group count are editable. A node can also be explicitly ungrouped (`hue === null`), rendered in a fixed grey (`NULL_COLOUR`) — the "clear node group" swatch in the sidebar sets this, and it's also what a node reverts to if its group is removed via `removeLastGroup()`. Publishes `groups/changed` on add/remove/load; `Model.js` listens to rebuild `COLOUR_NODE_LIST`. |
 | `Mouse.js` | Normalises mouse/touch events; publishes `mousemove`, `mousedown`, `mouseup`, `mouseclick`. |
 | `Key.js` | Keyboard handler; publishes `key/undo`, `key/redo`, `key/zoomin`, etc. |
 | `helpers.js` | Global utility functions (`_configureProperties`, `_createCanvas`, `_getParameterByName`, `_isPointInCircle`, etc.) and global constants (`_PADDING`, `Math.TAU`, `HIGHLIGHT_COLOR`). |
@@ -71,9 +71,9 @@ Model state is stored as a URL-encoded JSON array passed in the `?data=` query p
 
 Node fields (by index): `id, x, y, init, label(encoded), hue, radius, gain, strength, active, topLabel(encoded), bottomLabel(encoded), description(encoded)`
 
-Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation]`
+Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation], edgeType`
 
-`settings[]` holds `[MAX_SIGNAL_AGE, MAX_SIGNALS_PER_EDGE, MAX_SIGNALS, showType, showGroup, showStartAmount, showRadius, showGain, showStrength, showEdgePolarity, showAttenuation, showSpeed]` — entries 3+ are the diagram-embedded defaults for `NodeOptions.js`'s toggles (6 node keys then 3 edge keys) and may be absent/short in links saved by older versions (treated as "no diagram default" rather than an error).
+`settings[]` holds `[MAX_SIGNAL_AGE, MAX_SIGNALS_PER_EDGE, MAX_SIGNALS, showType, showGroup, showStartAmount, showRadius, showGain, showStrength, showEdgePolarity, showAttenuation, showSpeed, showEdgeType]` — entries 3+ are the diagram-embedded defaults for `NodeOptions.js`'s toggles (6 node keys then 4 edge keys) and may be absent/short in links saved by older versions (treated as "no diagram default" rather than an error).
 
 `groupNames[]` is a flat array of Node Group names (e.g. `["Risks","Mitigations"]`); the group count is `groupNames.length` (1-8) and each name's colour is `NodeGroups.PALETTE[index]` (fixed, not stored). Absent in older links, which fall back to the default 4 groups.
 
@@ -87,6 +87,12 @@ All drawing uses the HTML5 Canvas API at 2× resolution (retina). The model canv
 
 ## Node Active Types
 
-- `0` = inactive (no up/down controls in play mode, does not propagate signals)
-- `1` = active (shows up/down controls, propagates signals)
-- `2` = split node (rendered with top/bottom labels and a horizontal divider; no controls)
+- `0` = non-simulable (no up/down controls in play mode, does not propagate signals)
+- `1` = simulable (shows up/down controls, propagates signals) — **the default**, including when the "Node Type" field is toggled off
+- `2` = split node (rendered with top/bottom labels and a horizontal divider; no controls) — legacy only, no longer selectable from the sidebar's `ComponentNodeType` picker, but old saved links with it still render correctly via `SplitNodeRenderer.js`
+
+## Edge Types
+
+- `"directed"` (default) — solid line, single arrowhead at "to", normal signal propagation
+- `"bi-directed"` — dashed line, arrowheads at both ends, normal signal propagation
+- `"questionable"` — dotted line, a "?" glyph at ~30% along the arrow, signal visibly travels but is never delivered to "to" (see `Edge.updateSignals`)

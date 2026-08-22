@@ -29,9 +29,14 @@ function Node(model, config){
 		radius: model.DEFAULT_NODE_RADIUS,
 		gain: model.DEFAULT_NODE_GAIN,
 		strength: model.DEFAULT_SIGNAL_SIZE,
-		active: 0, // 0=inactive, 1=active, 2=split
-		topLabel: undefined,      // Split node top label
-		bottomLabel: undefined   // Split node bottom label
+		// 0=non-simulable, 1=simulable. Defaults to simulable, so a node
+		// behaves that way even with the "Node Type" field toggled off
+		// (and thus unreachable in the sidebar). "2" (split) is retired -
+		// no longer creatable/editable, but old saved links that still
+		// have it keep rendering via SplitNodeRenderer for compatibility.
+		active: 1,
+		topLabel: undefined,      // Split node top label (legacy, see above)
+		bottomLabel: undefined   // Split node bottom label (legacy, see above)
 	});
 
 	// Value: from 0 to 1
