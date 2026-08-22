@@ -196,8 +196,24 @@ function Ink(loopy){
 
 		}
 
-		// NODE: did NOT start in a node.
+		// Did the path cross an EXISTING node anywhere along its length (not
+		// just at the very start)? If so, this was a stroke that grazed/passed
+		// through a node while moving through empty space - not an attempt to
+		// draw a new node on top of it - so treat it as a no-op, same as the
+		// "started in a node but didn't end in one" case above.
+		var crossedExistingNode = false;
 		if(!startNode){
+			for(var i=0; i<self.strokeData.length; i++){
+				var pt = self.strokeData[i];
+				if(loopy.model.getNodeByPoint(pt[0], pt[1])){
+					crossedExistingNode = true;
+					break;
+				}
+			}
+		}
+
+		// NODE: did NOT start in a node, AND never crossed one either.
+		if(!startNode && !crossedExistingNode){
 
 			// Just roughly make a circle the size of the bounds of the circle
 			var bounds = _getBounds(self.strokeData);
