@@ -25,7 +25,7 @@ function Loopy(config){
 	// Offset & Scale?!?!
 	self.offsetX = 0;
 	self.offsetY = 0;
-	self.offsetScale = 1;
+	self.offsetScale = 0.5; // start about twice as zoomed out as 100%
 
 	// Add these properties after line 23 (after self.offsetScale = 1;)
 	self.minZoom = 0.25;

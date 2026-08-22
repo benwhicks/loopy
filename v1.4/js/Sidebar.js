@@ -580,6 +580,10 @@ function Sidebar(loopy){
 				var ok = confirm("This will delete every node, edge, and label on the canvas.\n\nThis cannot be undone (well - you can still Ctrl-Z it). Continue?");
 				if(ok){
 					loopy.model.clear();
+					// Blank canvas - back to a clean, centered, 100% view.
+					loopy.offsetX = 0;
+					loopy.offsetY = 0;
+					loopy.zoomReset();
 				}
 			}
 		}));
