@@ -164,6 +164,16 @@ div[big=yes] .play_button_label{
 	background: #222;
 	color: #777;
 }
+/* A very slight colour cue for what the sidebar is currently editing. */
+#sidebar{
+	transition: background-color 0.15s ease;
+}
+#sidebar[editing=node]{
+	background: #d8dfe6; /* a hair bluer than the plain #ddd grey */
+}
+#sidebar[editing=edge]{
+	background: #e6dcdc; /* a hair redder than the plain #ddd grey */
+}
 #sidebar .mini_button{
 	background: #999;
 	color: #fff;
@@ -266,9 +276,29 @@ div[big=yes] .play_button_label{
 .component_button[header=yes]:hover{
 	background: #333;
 }
+.component_button[danger=yes]{
+	background: #b23a3a;
+}
+.component_button[danger=yes]:hover{
+	background: #c74848;
+}
+
+.sidebar_hint{
+	/* clears the absolutely-positioned "back to top" header button when
+	   this hint is the first visible thing on the page (e.g. an Edge
+	   with every optional field toggled off) */
+	margin-top: 45px;
+	font-size: 14px;
+	line-height: 1.4;
+	color: #777;
+	font-style: italic;
+}
+#sidebar[mode=play] .sidebar_hint{
+	color: #888;
+}
 
 /**********
-SIDEBAR: PERSISTENT OPTIONS HEADER
+SIDEBAR: GLOBAL OPTIONS (shown on the deselected/"Edit" page)
 **********/
 
 #sidebar_options{

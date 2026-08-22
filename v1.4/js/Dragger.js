@@ -64,6 +64,9 @@ function Dragger(loopy){
 				loopy.sidebar.edit(clickedItem);
 			}
 		} else {
+			// Clicked empty space: deselect, back to the global options page
+			loopy.sidebar.showPage("Edit");
+
 			// Start box selection
 			self.isBoxSelecting = true;
 			self.boxStartX = Mouse.x;

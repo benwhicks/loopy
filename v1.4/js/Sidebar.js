@@ -26,11 +26,25 @@ function Sidebar(loopy){
 		}
 	});
 
+	// Tint the sidebar background based on what's being edited: a hair
+	// bluer for a Node, a hair redder for an Edge, plain grey otherwise.
+	// Single choke point (wraps showPage) so every path that changes the
+	// active page - self.edit(), "back to top", kill, deselect - is covered.
+	var _showPage = self.showPage;
+	self.showPage = function(id){
+		var page = _showPage(id);
+		if(id === "Node") self.dom.setAttribute("editing", "node");
+		else if(id === "Edge") self.dom.setAttribute("editing", "edge");
+		else self.dom.removeAttribute("editing");
+		return page;
+	};
+
 	////////////////////////////////////////////////////////////////////////////////////////////
-	// PERSISTENT OPTIONS HEADER (pinned above every sidebar page) ////////////////////////////////
+	// GLOBAL OPTIONS (built here, placed into the "Edit"/deselected page below) ///////////////
 	////////////////////////////////////////////////////////////////////////////////////////////
 
-	(function(){
+	// Collapsible Node Fields / Edge Fields visibility checkboxes.
+	var _buildFieldsOptions = function(){
 
 		var NODE_FIELD_LABELS = {
 			active: "Node Type",
@@ -46,8 +60,8 @@ function Sidebar(loopy){
 			speedMultiplier: "Signal Speed"
 		};
 
-		var header = document.createElement("div");
-		header.id = "sidebar_options";
+		var container = document.createElement("div");
+		container.id = "sidebar_options";
 
 		var toggleRow = document.createElement("div");
 		toggleRow.className = "options_toggle";
@@ -56,12 +70,12 @@ function Sidebar(loopy){
 			toggleRow.innerHTML = (collapsed ? "&#9656;" : "&#9662;") + " Options";
 		};
 		setToggleLabel();
-		header.appendChild(toggleRow);
+		container.appendChild(toggleRow);
 
 		var body = document.createElement("div");
 		body.className = "options_body";
 		body.style.display = "none";
-		header.appendChild(body);
+		container.appendChild(body);
 
 		toggleRow.onclick = function(){
 			collapsed = !collapsed;
@@ -107,11 +121,24 @@ function Sidebar(loopy){
 			body.appendChild(buildOptionCheckbox(key, EDGE_FIELD_LABELS[key]));
 		});
 
-		// -- Node Groups: named colour groups (Okabe-Ito palette) --
-		addSubheading("Node Groups");
+		return container;
+	};
+
+	// Node Groups: named colour groups (Okabe-Ito palette). Always
+	// expanded (not tucked inside the collapsible above) since renaming
+	// groups is a more everyday action than the individual field toggles.
+	var _buildNodeGroupsSection = function(){
+
+		var container = document.createElement("div");
+		container.id = "sidebar_node_groups";
+
+		var heading = document.createElement("div");
+		heading.className = "options_subheading";
+		heading.innerHTML = "Node Groups";
+		container.appendChild(heading);
 
 		var groupsList = document.createElement("div");
-		body.appendChild(groupsList);
+		container.appendChild(groupsList);
 
 		var groupsButtons = document.createElement("div");
 		var addGroupBtn = document.createElement("span");
@@ -125,7 +152,7 @@ function Sidebar(loopy){
 		removeGroupBtn.onclick = function(){ loopy.nodeGroups.removeLastGroup(); };
 		groupsButtons.appendChild(addGroupBtn);
 		groupsButtons.appendChild(removeGroupBtn);
-		body.appendChild(groupsButtons);
+		container.appendChild(groupsButtons);
 
 		// Rebuilds the whole group list - only called on add/remove (discrete
 		// clicks), never on every keystroke, so typing a name never loses focus.
@@ -162,9 +189,8 @@ function Sidebar(loopy){
 		renderGroups();
 		subscribe("groups/changed", renderGroups);
 
-		self.dom.appendChild(header);
-
-	})();
+		return container;
+	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// ACTUAL PAGES ////////////////////////////////////////////////////////////////////////////
@@ -246,6 +272,12 @@ function Sidebar(loopy){
             }
         }));
 
+        // Shown instead, when every optional field above is toggled off.
+        var noOptionsHint = page.addComponent(new ComponentHTML({
+            html: "<div class='sidebar_hint'>These are editable through the global "+
+                "settings - accessed by clicking in an empty space in the graph.</div>"
+        }));
+
         // Method to toggle label visibility (split node top/bottom vs. name)
         // Only reachable at all when the "Node Type" option is enabled -
         // this hides sidebar UI only; node.active and its rendering are
@@ -279,13 +311,17 @@ function Sidebar(loopy){
         page.updateOptionVisibility = function(){
             var nodeOptions = loopy.nodeOptions;
             if(!nodeOptions) return;
+            var anyVisible = false;
             for(var i=0; i<OPTIONAL_KEYS.length; i++){
                 var key = OPTIONAL_KEYS[i];
                 var comp = page.getComponent(key);
+                var visible = nodeOptions.get(key);
+                if(visible) anyVisible = true;
                 if(comp && comp.dom){
-                    comp.dom.style.display = nodeOptions.get(key) ? "block" : "none";
+                    comp.dom.style.display = visible ? "block" : "none";
                 }
             }
+            noOptionsHint.dom.style.display = anyVisible ? "none" : "block";
             // Split-label reachability depends on the "active" (Node Type) toggle
             page.updateLabelVisibility();
         };
@@ -380,6 +416,12 @@ function Sidebar(loopy){
 				Edge.speedMultiplier = value;
 			}
 		}));
+		// Shown instead, when every optional field above is toggled off.
+		var noOptionsHint = page.addComponent(new ComponentHTML({
+			html: "<div class='sidebar_hint'>These are editable through the global "+
+				"settings - accessed by clicking in an empty space in the graph.</div>"
+		}));
+
 		page.addComponent(new ComponentButton({
 			label: "delete edge",
 			onclick: function(edge){
@@ -397,13 +439,17 @@ function Sidebar(loopy){
 		page.updateOptionVisibility = function(){
 			var nodeOptions = loopy.nodeOptions;
 			if(!nodeOptions) return;
+			var anyVisible = false;
 			for(var i=0; i<EDGE_OPTIONAL_KEYS.length; i++){
 				var key = EDGE_OPTIONAL_KEYS[i];
 				var comp = page.getComponent(key);
+				var visible = nodeOptions.get(key);
+				if(visible) anyVisible = true;
 				if(comp && comp.dom){
-					comp.dom.style.display = nodeOptions.get(key) ? "block" : "none";
+					comp.dom.style.display = visible ? "block" : "none";
 				}
 			}
+			noOptionsHint.dom.style.display = anyVisible ? "none" : "block";
 		};
 		page.updateOptionVisibility();
 		subscribe("settings/changed", function(){
@@ -456,9 +502,11 @@ function Sidebar(loopy){
 		self.addPage("Label", page);
 	})();
 
-	// Edit
+	// Edit (shown when nothing is selected - clicking empty canvas space)
 	(function(){
 		var page = new SidebarPage();
+
+		// 1. Title, links, zoom indicator
 		page.addComponent(new ComponentHTML({
 			html: ""+
 
@@ -476,6 +524,20 @@ function Sidebar(loopy){
 			"<span style='font-size:13px'>Ctrl+Scroll, Ctril+ +/- or use toolbar</span>"+
 			"</div>"+
 
+			"<hr/>"
+
+		}));
+
+		// 2. Expandable global field-visibility options
+		page.dom.appendChild(_buildFieldsOptions());
+
+		// 3. Node Groups (where you name the colours)
+		page.dom.appendChild(_buildNodeGroupsSection());
+
+		// 4. Export controls
+		page.addComponent(new ComponentHTML({
+			html: ""+
+
 			"<hr/><br>"+
 
 			"<span class='mini_button' onclick='loopy.sidebar.showPage(\"History\")'>history manager</span><br><br>"+
@@ -484,7 +546,30 @@ function Sidebar(loopy){
 			"<span class='mini_button' onclick='publish(\"modal\",[\"save_link\"])'>save as link</span> <br><br>"+
 			"<span class='mini_button' onclick='publish(\"export/file\")'>save as file</span> "+
 			"<span class='mini_button' onclick='publish(\"import/file\")'>load from file</span> <br><br>"+
-			"<span class='mini_button' onclick='publish(\"modal\",[\"embed\"])'>embed in your website</span> <br><br>"+
+			"<span class='mini_button' onclick='publish(\"modal\",[\"embed\"])'>embed in your website</span>"
+
+		}));
+
+		// 5. Clear Graph - deletes all nodes/edges/labels (not history or
+		// settings, so an accidental clear is still Ctrl-Z undoable), only
+		// after a confirm() warning. Styled as a danger button.
+		page.addComponent(new ComponentButton({
+			danger: true,
+			label: "clear graph",
+			onclick: function(){
+				if(loopy.model.nodes.length===0 && loopy.model.edges.length===0 && loopy.model.labels.length===0){
+					return; // nothing to clear
+				}
+				var ok = confirm("This will delete every node, edge, and label on the canvas.\n\nThis cannot be undone (well - you can still Ctrl-Z it). Continue?");
+				if(ok){
+					loopy.model.clear();
+				}
+			}
+		}));
+
+		// 6. Credits
+		page.addComponent(new ComponentHTML({
+			html: ""+
 
 			"<hr/><br>"+
 
@@ -980,6 +1065,11 @@ function ComponentButton(config){
 	// Unless it's a HEADER button!
 	if(config.header){
 		button.setAttribute("header","yes");
+	}
+
+	// Or a DANGER button (e.g. "clear graph")!
+	if(config.danger){
+		button.setAttribute("danger","yes");
 	}
 
 }
