@@ -133,13 +133,16 @@ function Dragger(loopy){
 			node.x = Mouse.x - self.offsetX;
 			node.y = Mouse.y - self.offsetY;
 
-			// Detect potential merge target
+			// Detect potential merge target - only when "Merge & Split" is
+			// turned on (Model options > Node Fields, off by default).
 			self.mergeTarget = null;
-			for (var i = 0; i < loopy.model.nodes.length; i++) {
-				var candidate = loopy.model.nodes[i];
-				if (candidate !== node && candidate.isPointInNode(node.x, node.y)) {
-					self.mergeTarget = candidate;
-					break;
+			if(loopy.nodeOptions.get("mergeSplit")){
+				for (var i = 0; i < loopy.model.nodes.length; i++) {
+					var candidate = loopy.model.nodes[i];
+					if (candidate !== node && candidate.isPointInNode(node.x, node.y)) {
+						self.mergeTarget = candidate;
+						break;
+					}
 				}
 			}
 

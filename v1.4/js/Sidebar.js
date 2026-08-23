@@ -50,6 +50,7 @@ function Sidebar(loopy){
 
 		var FIELD_LABELS = {
 			radius: "Size",
+			mergeSplit: "Merge & Split",
 			edgeType: "Edge Type",
 			direction: "Edge Polarity (+/-)",
 			active: "Node Type",
@@ -113,6 +114,7 @@ function Sidebar(loopy){
 
 		addSubheading("Node Fields");
 		body.appendChild(buildOptionCheckbox("radius", FIELD_LABELS.radius));
+		body.appendChild(buildOptionCheckbox("mergeSplit", FIELD_LABELS.mergeSplit));
 
 		addSubheading("Edge Fields");
 		body.appendChild(buildOptionCheckbox("edgeType", FIELD_LABELS.edgeType));

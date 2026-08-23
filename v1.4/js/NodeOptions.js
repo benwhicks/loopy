@@ -33,6 +33,14 @@ picker. Its visuals (dash pattern, arrowheads, the "?" glyph) and its
 effect on simulation (a "questionable" edge never delivers its signal)
 always apply regardless of this toggle - see Edge.js.
 
+SPECIAL CASE - "mergeSplit": not a field-visibility toggle at all (it's
+in INTERACTION_KEYS, not NODE_KEYS/EDGE_KEYS) - it gates the Drag tool's
+merge-on-drop behaviour (dragging one node onto another, see
+Dragger.js's mergeTarget detection/mouseup handler and Model.mergeNodes)
+and, in future, a symmetric "split one node into two" gesture. OFF by
+default like everything else here - merging (and later, splitting) only
+works once this is turned on.
+
 Precedence when computing the merged, currently-active visibility state:
   localStorage override (this browser) > diagram default (this file) > off
 
@@ -43,12 +51,18 @@ function NodeOptions(loopy){
 	var self = this;
 	self.loopy = loopy;
 
-	// Fixed order == settings[] indices 3-8 (node) / 9-11 (edge) in
+	// Fixed order == settings[] indices 3-8 (node) / 9-12 (edge) in
 	// Model.serialize/deserialize, and the checkbox order in the
 	// Sidebar's persistent Options header.
 	self.NODE_KEYS = ["active", "hue", "init", "radius", "gain", "strength"];
 	self.EDGE_KEYS = ["direction", "attenuation", "speedMultiplier", "edgeType"];
-	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS);
+	// Interaction toggles (not a per-node/per-edge editable field, so not
+	// part of NODE_KEYS/EDGE_KEYS above - those also drive which Sidebar
+	// page a field's checkbox lives under). Appended AFTER NODE_KEYS/
+	// EDGE_KEYS in self.KEYS/settings[] (index 13) so existing indices
+	// 3-12 - and thus old saved links - are untouched.
+	self.INTERACTION_KEYS = ["mergeSplit"];
+	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS).concat(self.INTERACTION_KEYS);
 
 	self.storageKey = "loopy_node_options";
 
