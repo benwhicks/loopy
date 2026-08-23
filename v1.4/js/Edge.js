@@ -389,10 +389,14 @@ function Edge(model, config){
 
 		// Width & Color
 		ctx.lineWidth = 6*Math.abs(self.strength)-2;
-		// A "-" (balancing) edge is ALWAYS this dark red, as a passive
-		// polarity cue that doesn't depend on the Edge Polarity toggle -
-		// this takes priority over the speed-based colouring below.
-		if(self.direction<0) ctx.strokeStyle = model.COLOUR_EDGE_NEGATIVE;
+		// Two mutually-exclusive ways to show a "-" (balancing) edge's
+		// polarity, switched by the "Edge Polarity" toggle below:
+		// OFF (default) - colour is the polarity cue: a "-" edge is
+		// always this dark red, taking priority over speed-colouring.
+		// ON - the +/- icon (drawn further down) is the polarity cue
+		// instead, so colouring falls through to the normal speed-based
+		// rules even for a "-" edge.
+		if(self.direction<0 && !self.loopy.nodeOptions.get("direction")) ctx.strokeStyle = model.COLOUR_EDGE_NEGATIVE;
 		else if(self.speedMultiplier>=1.5) ctx.strokeStyle = model.COLOUR_EDGE_FAST;
 		else if(self.speedMultiplier<=0.68) ctx.strokeStyle = model.COLOUR_EDGE_SLOW;
 		else ctx.strokeStyle = model.COLOUR_EDGE;
@@ -457,9 +461,11 @@ function Edge(model, config){
 			ctx.stroke();
 		}
 
-		// Draw label - globally on/off via the "Edge Polarity" Options
+		// Draw +/- icon - globally on/off via the "Edge Polarity" Options
 		// toggle (loopy.nodeOptions "direction"), not a per-edge setting:
-		// turning it on shows the +/- glyph on every edge at once.
+		// turning it on shows the icon on every edge at once, AND (see
+		// the colour block above) switches OFF the dark-red negative
+		// colouring, since the icon is now the polarity cue instead.
 		if(self.loopy.nodeOptions.get("direction")){
 			ctx.font = "100 60px sans-serif";
 			ctx.textAlign = "center";

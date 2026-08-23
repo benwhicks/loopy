@@ -20,13 +20,17 @@ saved links, but it's no longer exposed as a toggle in the Sidebar's
 Node Group swatch picker regardless of this value - Node Groups are
 always on (see Sidebar.js's _buildNodeGroupsSection).
 
-SPECIAL CASE - "direction" (Edge Polarity): this one also gates whether
-the +/- glyph is drawn on EVERY edge on the canvas (see Edge.js draw()),
-not just the sidebar editing control - turning it on both shows every
-edge's polarity and lets you change it; turning it off hides the glyph
-everywhere but leaves each edge's direction value untouched. Independent
-of this toggle, a negative edge is always drawn dark red (Edge.js), as a
-passive cue that doesn't require the toggle to be on.
+SPECIAL CASE - "direction" (Edge Polarity): this one also picks which of
+two mutually-exclusive ways a "-" edge's polarity is shown on the canvas
+(see Edge.js draw()), not just the sidebar editing control:
+  OFF (default) - COLOUR: a "-" edge is always dark red
+    (COLOUR_EDGE_NEGATIVE), a passive cue that needs no toggle.
+  ON - ICON: every edge shows its +/- glyph instead, and the dark-red
+    colouring switches off (a "-" edge falls back to normal/speed
+    colouring) since the icon is now the polarity cue.
+Either way, turning the toggle off never touches any edge's underlying
+direction value - only which display mode is used, and whether the
+sidebar's Edge Polarity slider is shown for editing it.
 
 SPECIAL CASE - "edgeType": likewise only gates the sidebar's Edge Type
 picker. Its visuals (dash pattern, arrowheads, the "?" glyph) and its
