@@ -163,11 +163,28 @@ function Model(loopy){
 		}
 
 		// 2. Create merged node at nodeB's position/style
+
+		// Description: concatenate both nodes' notes, each labeled by its
+		// original node's name, so a merge never silently loses either
+		// side's documentation. A node with no description contributes
+		// no line (avoids an orphan "Name: " line for the common case
+		// where only one side had notes).
+		var descriptionParts = [];
+		if(nodeA.description) descriptionParts.push(nodeA.label + ': ' + nodeA.description);
+		if(nodeB.description) descriptionParts.push(nodeB.label + ': ' + nodeB.description);
+		var mergedDescription = descriptionParts.join('\n');
+
+		// Node Group: keep it if both nodes agree, otherwise the merge is
+		// ambiguous - fall back to ungrouped (null), the same value a
+		// node gets when its group is removed via NodeGroups.removeLastGroup().
+		var mergedHue = (nodeA.hue === nodeB.hue) ? nodeB.hue : null;
+
 		var mergedNode = self.addNode({
 			x:           nodeB.x,
 			y:           nodeB.y,
 			label:       nodeA.label + '_' + nodeB.label,
-			hue:         nodeB.hue,
+			description: mergedDescription,
+			hue:         mergedHue,
 			radius:      nodeB.radius,
 			gain:        nodeB.gain,
 			init:        nodeB.init,

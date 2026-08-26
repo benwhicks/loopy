@@ -351,6 +351,14 @@ function Sidebar(loopy){
                 }
             }
             noOptionsHint.dom.style.display = anyVisible ? "none" : "block";
+
+            // "split node" button - only offered when Merge & Split is on
+            // (splitBtn is declared further down, after "delete node";
+            // guard against the "Initialize immediately" call below,
+            // which runs before that declaration executes).
+            if(splitBtn && splitBtn.dom){
+                splitBtn.dom.style.display = nodeOptions.get("mergeSplit") ? "block" : "none";
+            }
         };
 
         // Initialize immediately so there's no flash of wrongly-visible
@@ -388,6 +396,22 @@ function Sidebar(loopy){
                 }
             }
         };
+
+        // "split node" - an explicit alternative to the canvas's Alt+drag
+        // split gesture (Dragger.js), for when a click is easier than a
+        // drag. Only shown when Merge & Split is on (see
+        // updateOptionVisibility above). No drag to place the twin here,
+        // so it's just offset to the side, then selected for editing.
+        var splitBtn = page.addComponent(new ComponentButton({
+            label: "split node",
+            onclick: function(node){
+                var twin = loopy.model.splitNode(node);
+                twin.x = node.x + node.radius*2 + 30;
+                twin.y = node.y;
+                publish("model/changed");
+                loopy.sidebar.edit(twin);
+            }
+        }));
 
         page.addComponent(new ComponentButton({
             label: "delete node",
