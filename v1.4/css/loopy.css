@@ -342,6 +342,28 @@ div[big=yes] .play_button_label{
 .component_button[danger=yes]:hover{
 	background: #c74848;
 }
+/* "split node" - a thin transparent diagonal crack through the middle,
+   hinting at what the button does. Genuinely transparent (not a solid
+   colour) so whatever's behind the sidebar at that point (light or
+   dark, depending on mode) shows through correctly either way. */
+.component_button[split=yes]{
+	background: linear-gradient(
+		135deg,
+		#888 calc(50% - 2px),
+		transparent calc(50% - 2px),
+		transparent calc(50% + 2px),
+		#888 calc(50% + 2px)
+	);
+}
+.component_button[split=yes]:hover{
+	background: linear-gradient(
+		135deg,
+		#999 calc(50% - 2px),
+		transparent calc(50% - 2px),
+		transparent calc(50% + 2px),
+		#999 calc(50% + 2px)
+	);
+}
 
 .sidebar_hint{
 	/* clears the absolutely-positioned "back to top" header button when

@@ -404,6 +404,7 @@ function Sidebar(loopy){
         // so it's just offset to the side, then selected for editing.
         var splitBtn = page.addComponent(new ComponentButton({
             label: "split node",
+            split: true,
             onclick: function(node){
                 var twin = loopy.model.splitNode(node);
                 twin.x = node.x + node.radius*2 + 30;
@@ -1103,6 +1104,12 @@ function ComponentButton(config){
 	// Or a DANGER button (e.g. "clear graph")!
 	if(config.danger){
 		button.setAttribute("danger","yes");
+	}
+
+	// Or a SPLIT button (e.g. "split node") - a transparent diagonal
+	// crack through the middle, hinting at what it does.
+	if(config.split){
+		button.setAttribute("split","yes");
 	}
 
 }
