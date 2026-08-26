@@ -51,7 +51,6 @@ function Sidebar(loopy){
 		var FIELD_LABELS = {
 			radius: "Size",
 			mergeSplit: "Merge & Split",
-			edgeType: "Edge Type",
 			direction: "Edge Polarity (+/-)",
 			active: "Node Type",
 			init: "Start Amount",
@@ -117,7 +116,6 @@ function Sidebar(loopy){
 		body.appendChild(buildOptionCheckbox("mergeSplit", FIELD_LABELS.mergeSplit));
 
 		addSubheading("Edge Fields");
-		body.appendChild(buildOptionCheckbox("edgeType", FIELD_LABELS.edgeType));
 		body.appendChild(buildOptionCheckbox("direction", FIELD_LABELS.direction));
 
 		addSubheading("Simulation");
@@ -458,8 +456,12 @@ function Sidebar(loopy){
 		// Which fields are globally opt-in (off by default) - same pattern
 		// as the Node page. Toggling one off only hides its Sidebar UI.
 		// "direction" (Edge Polarity) also gates the +/- glyph drawn on
-		// every edge on the canvas - see Edge.js draw().
-		var EDGE_OPTIONAL_KEYS = ["direction", "attenuation", "speedMultiplier", "edgeType"];
+		// every edge on the canvas - see Edge.js draw(). "edgeType" is
+		// deliberately absent - it's always shown, same treatment as the
+		// Node page's "hue" (Node Group) picker, so a split's new
+		// "questionable" edges can always be reviewed/promoted here
+		// without hunting for a toggle first.
+		var EDGE_OPTIONAL_KEYS = ["direction", "attenuation", "speedMultiplier"];
 
 		page.updateOptionVisibility = function(){
 			var nodeOptions = loopy.nodeOptions;

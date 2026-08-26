@@ -291,6 +291,16 @@ var HistoryTracker = (function() {
             };
         },
 
+        // Describe node split
+        nodeSplit: function(label) {
+            return {
+                description: 'Split "' + label + '"',
+                timestamp: formatTimestamp(),
+                type: 'node_split',
+                details: { label: label }
+            };
+        },
+
         // Generic action
         genericAction: function(description) {
             return {

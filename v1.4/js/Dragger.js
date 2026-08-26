@@ -16,6 +16,10 @@ function Dragger(loopy){
 	self.mergeTarget = null;
 	self.dragStartX = 0;
 	self.dragStartY = 0;
+	// Node awaiting an Alt+drag split - see mousedown/mousemove below.
+	// Non-null between an Alt+mousedown on a node and either the first
+	// mousemove (which spawns the twin) or mouseup (a plain Alt+click).
+	self.pendingSplitNode = null;
 
 	// Multi-select
 	self.selectedItems = [];
@@ -54,14 +58,27 @@ function Dragger(loopy){
 			} else {
 				// Single item drag (clear selection)
 				self.selectedItems = [];
-				self.dragging = clickedItem;
-				self.offsetX = Mouse.x - clickedItem.x;
-				self.offsetY = Mouse.y - clickedItem.y;
-				if (clickedItem._CLASS_ === "Node") {
-					self.dragStartX = clickedItem.x;
-					self.dragStartY = clickedItem.y;
+
+				if(clickedItem._CLASS_==="Node" && Key.alt && loopy.nodeOptions.get("mergeSplit")){
+					// Alt+drag on a node = split, not move (only when
+					// Merge & Split is on). The twin is spawned on the
+					// first mousemove below, not here - a plain Alt+click
+					// with no movement should behave like a normal click,
+					// not spawn a duplicate node.
+					self.pendingSplitNode = clickedItem;
+					self.offsetX = Mouse.x - clickedItem.x;
+					self.offsetY = Mouse.y - clickedItem.y;
+					loopy.sidebar.edit(clickedItem);
+				} else {
+					self.dragging = clickedItem;
+					self.offsetX = Mouse.x - clickedItem.x;
+					self.offsetY = Mouse.y - clickedItem.y;
+					if (clickedItem._CLASS_ === "Node") {
+						self.dragStartX = clickedItem.x;
+						self.dragStartY = clickedItem.y;
+					}
+					loopy.sidebar.edit(clickedItem);
 				}
-				loopy.sidebar.edit(clickedItem);
 			}
 		} else {
 			// Clicked empty space: deselect, back to the global options page
@@ -82,6 +99,22 @@ function Dragger(loopy){
 		// ONLY WHEN EDITING w DRAG
 		if(self.loopy.mode!=Loopy.MODE_EDIT) return;
 		if(self.loopy.tool!=Loopy.TOOL_DRAG) return;
+
+		// Alt+drag pending a split? Spawn the twin now (first actual
+		// move, not on mousedown) and start dragging IT instead of the
+		// original - the single-node-drag code below (including merge-
+		// target detection) then handles it exactly like any other
+		// dragged node, so dropping a freshly split-off twin onto a
+		// third node can even merge it there.
+		if(self.pendingSplitNode){
+			var original = self.pendingSplitNode;
+			self.pendingSplitNode = null;
+			var twin = loopy.model.splitNode(original);
+			self.dragging = twin;
+			self.dragStartX = twin.x;
+			self.dragStartY = twin.y;
+			loopy.sidebar.edit(twin);
+		}
 
 		// Box selecting
 		if(self.isBoxSelecting){
@@ -214,6 +247,11 @@ function Dragger(loopy){
 		// ONLY WHEN EDITING w DRAG
 		if(self.loopy.mode!=Loopy.MODE_EDIT) return;
 		if(self.loopy.tool!=Loopy.TOOL_DRAG) return;
+
+		// A plain Alt+click (mousedown then mouseup, no movement in
+		// between) never reached mousemove's split-spawn - clear it so
+		// it can't ambush a later, unrelated drag.
+		self.pendingSplitNode = null;
 
 		// Stop box selecting
 		if(self.isBoxSelecting){

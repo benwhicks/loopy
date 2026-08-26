@@ -138,7 +138,7 @@ function Model(loopy){
 	// Merge two nodes into one
 	self.mergeNodes = function(nodeA, nodeB) {
 		// Tag the next history record as a designated merge event
-		self.loopy.history.pendingMergeAction = HistoryTracker.nodeMerged(
+		self.loopy.history.pendingHistoryAction = HistoryTracker.nodeMerged(
 			nodeA.label, nodeB.label, nodeA.label + '_' + nodeB.label
 		);
 
@@ -201,6 +201,71 @@ function Model(loopy){
 				edgeType:        ec.edgeType
 			});
 		}
+	};
+
+	// Split a node into two: the original stays exactly where it is - a
+	// new "twin" (full property duplicate, same position) is created for
+	// the caller (Dragger.js) to drag away. Every edge touching the
+	// original is duplicated onto the twin, and ALL of them - the
+	// original's own edges AND the twin's copies - are downgraded to
+	// "questionable", since a split creates uncertainty about which node
+	// each old connection still belongs to; nothing is left silently
+	// delivering signal until the user reviews and re-confirms each
+	// edge's type.
+	self.splitNode = function(node){
+		self.loopy.history.pendingHistoryAction = HistoryTracker.nodeSplit(node.label);
+
+		// 1. Snapshot every edge touching the original before creating anything
+		var touchingEdges = [];
+		for(var i=0; i<self.edges.length; i++){
+			var edge = self.edges[i];
+			if(edge.from===node || edge.to===node) touchingEdges.push(edge);
+		}
+
+		// 2. Create the twin - full property duplicate, same position
+		//    (Dragger.js starts dragging it away immediately). Unlike
+		//    mergeNodes (which combines two nodes and intentionally
+		//    drops strength/description), a split is an unambiguous full
+		//    copy, so nothing is left out.
+		var twin = self.addNode({
+			x:           node.x,
+			y:           node.y,
+			label:       node.label,
+			description: node.description,
+			hue:         node.hue,
+			radius:      node.radius,
+			gain:        node.gain,
+			init:        node.init,
+			strength:    node.strength,
+			active:      node.active,
+			topLabel:    node.topLabel,
+			bottomLabel: node.bottomLabel
+		});
+
+		// 3. Duplicate each touching edge onto the twin; downgrade BOTH
+		//    the original's own edge and the new copy to "questionable".
+		//    (A self-loop naturally duplicates as a self-loop on the
+		//    twin too - no special-casing needed.)
+		for(var i=0; i<touchingEdges.length; i++){
+			var edge = touchingEdges[i];
+			var fromId = (edge.from===node) ? twin.id : edge.from.id;
+			var toId   = (edge.to===node)   ? twin.id : edge.to.id;
+			self.addEdge({
+				from:            fromId,
+				to:              toId,
+				arc:             edge.arc,
+				rotation:        edge.rotation,
+				strength:        edge.strength,
+				direction:       edge.direction,
+				attenuation:     edge.attenuation,
+				speedMultiplier: edge.speedMultiplier,
+				edgeType:        "questionable"
+			});
+			edge.edgeType = "questionable";
+		}
+		publish("model/changed");
+
+		return twin;
 	};
 
 	// Get all edges with start node

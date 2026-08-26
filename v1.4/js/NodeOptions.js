@@ -3,22 +3,24 @@
 NODE OPTIONS
 - Global, per-field visibility toggles for the Node and Edge sidebar
   pages. Every field EXCEPT a Node's "label" (Name), "description"
-  (Description), and "hue" (Node Group - always shown, see below) is
-  opt-in and OFF by default:
+  (Description), "hue" (Node Group), and an Edge's "edgeType" (Edge
+  Type) - all always shown, see below - is opt-in and OFF by default:
     Node:  Node Type, Start Amount, Radius, Gain, Strength
-    Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed, Edge Type
+    Edge:  Edge Polarity (+/-), Signal Attenuation, Signal Speed
 
 IMPORTANT: toggling a field OFF only hides its editing UI in the Sidebar.
 The underlying Node/Edge property is completely untouched - a node with
 a field turned off still simulates and renders identically. Only the
 ability to *edit* that field from the sidebar goes away.
 
-NOTE - "hue" (Node Group): kept in NODE_KEYS/self.visibility purely so
-the settings[] serialization layout (Model.js) doesn't shift for old
-saved links, but it's no longer exposed as a toggle in the Sidebar's
-"Model options" checkboxes, and Sidebar.js's Node page always shows the
-Node Group swatch picker regardless of this value - Node Groups are
-always on (see Sidebar.js's _buildNodeGroupsSection).
+NOTE - "hue" (Node Group) and "edgeType" (Edge Type): both kept in
+NODE_KEYS/EDGE_KEYS/self.visibility purely so the settings[]
+serialization layout (Model.js) doesn't shift for old saved links, but
+neither is exposed as a toggle in the Sidebar's "Model options"
+checkboxes any more - Sidebar.js's Node page always shows the Node
+Group swatch picker, and its Edge page always shows the Edge Type
+picker, regardless of these values (see Sidebar.js's
+_buildNodeGroupsSection and the Edge page's EDGE_OPTIONAL_KEYS).
 
 SPECIAL CASE - "direction" (Edge Polarity): this one also picks which of
 two mutually-exclusive ways a "-" edge's polarity is shown on the canvas
@@ -32,18 +34,19 @@ Either way, turning the toggle off never touches any edge's underlying
 direction value - only which display mode is used, and whether the
 sidebar's Edge Polarity slider is shown for editing it.
 
-SPECIAL CASE - "edgeType": likewise only gates the sidebar's Edge Type
-picker. Its visuals (dash pattern, arrowheads, the "?" glyph) and its
-effect on simulation (a "questionable" edge never delivers its signal)
-always apply regardless of this toggle - see Edge.js.
+SPECIAL CASE - "edgeType": its visuals (dash pattern, arrowheads, the
+"?" glyph) and its effect on simulation (a "questionable" edge never
+delivers its signal) always apply on the canvas - this was true even
+back when it was still a toggle-gated sidebar field, and remains true
+now that the field itself is always shown too (see the NOTE above).
 
 SPECIAL CASE - "mergeSplit": not a field-visibility toggle at all (it's
 in INTERACTION_KEYS, not NODE_KEYS/EDGE_KEYS) - it gates the Drag tool's
 merge-on-drop behaviour (dragging one node onto another, see
 Dragger.js's mergeTarget detection/mouseup handler and Model.mergeNodes)
-and, in future, a symmetric "split one node into two" gesture. OFF by
-default like everything else here - merging (and later, splitting) only
-works once this is turned on.
+and its symmetric Alt+drag split-off-a-twin gesture (Dragger.js's
+pendingSplitNode/Model.splitNode). OFF by default like everything else
+here - merging and splitting only work once this is turned on.
 
 Precedence when computing the merged, currently-active visibility state:
   localStorage override (this browser) > diagram default (this file) > off

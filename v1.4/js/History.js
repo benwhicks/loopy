@@ -23,7 +23,11 @@ function History(loopy) {
 
     // Snapshot for tracking changes
     self._lastSnapshot = null;
-    self.pendingMergeAction = null;
+    // Overrides the next auto-recorded entry's description - set by
+    // Model.mergeNodes/splitNode before they mutate anything, so the
+    // resulting debounced history entry gets a readable label instead
+    // of a generic "Model changed"/diffed description.
+    self.pendingHistoryAction = null;
 
     ///////////////////////////
     // SNAPSHOT SYSTEM ////////
@@ -248,9 +252,9 @@ function History(loopy) {
 
         // Build action record
         var actionRecord;
-        if (self.pendingMergeAction) {
-            actionRecord = self.pendingMergeAction;
-            self.pendingMergeAction = null;
+        if (self.pendingHistoryAction) {
+            actionRecord = self.pendingHistoryAction;
+            self.pendingHistoryAction = null;
         } else if (changes.length === 1) {
             actionRecord = changes[0];
         } else if (changes.length > 1) {

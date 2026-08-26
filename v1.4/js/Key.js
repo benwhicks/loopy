@@ -7,6 +7,7 @@
 	const KEY_CODES = {
 		17: "control",
 		91: "control", // mac
+		18: "alt",     // Option on mac - used for the node Split drag gesture
 		13: "enter",
 
 		78: "ink",   // (N) - Pencil
