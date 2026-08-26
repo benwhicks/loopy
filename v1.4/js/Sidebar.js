@@ -411,6 +411,11 @@ function Sidebar(loopy){
                 twin.y = node.y;
                 publish("model/changed");
                 loopy.sidebar.edit(twin);
+                // The offset twin can still land off-screen (e.g. the
+                // original was near the edge of the view) - zoom-to-fit
+                // to make sure it's actually visible, same as the
+                // toolbar's own "FIT" button.
+                loopy.zoomToFit();
             }
         }));
 

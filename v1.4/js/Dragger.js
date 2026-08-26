@@ -20,6 +20,11 @@ function Dragger(loopy){
 	// Non-null between an Alt+mousedown on a node and either the first
 	// mousemove (which spawns the twin) or mouseup (a plain Alt+click).
 	self.pendingSplitNode = null;
+	// True from the moment a split's twin is spawned until the drag
+	// ends - used to zoom-to-fit on mouseup so the new node (which can
+	// land off-screen, especially at higher zoom levels) is never left
+	// invisible after a split.
+	self.splitJustHappened = false;
 
 	// Multi-select
 	self.selectedItems = [];
@@ -109,6 +114,7 @@ function Dragger(loopy){
 		if(self.pendingSplitNode){
 			var original = self.pendingSplitNode;
 			self.pendingSplitNode = null;
+			self.splitJustHappened = true;
 			var twin = loopy.model.splitNode(original);
 			self.dragging = twin;
 			self.dragStartX = twin.x;
@@ -252,6 +258,15 @@ function Dragger(loopy){
 		// between) never reached mousemove's split-spawn - clear it so
 		// it can't ambush a later, unrelated drag.
 		self.pendingSplitNode = null;
+
+		// A split just happened during this drag - the twin's already at
+		// its final dropped position by now (mousemove is what moves it,
+		// mouseup doesn't), so zoom-to-fit now to make sure it's actually
+		// visible, same as clicking the toolbar's own "FIT" button.
+		if(self.splitJustHappened){
+			self.splitJustHappened = false;
+			loopy.zoomToFit();
+		}
 
 		// Stop box selecting
 		if(self.isBoxSelecting){
