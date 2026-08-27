@@ -174,10 +174,17 @@ function Model(loopy){
 		if(nodeB.description) descriptionParts.push(nodeB.label + ': ' + nodeB.description);
 		var mergedDescription = descriptionParts.join('\n');
 
-		// Node Group: keep it if both nodes agree, otherwise the merge is
-		// ambiguous - fall back to ungrouped (null), the same value a
-		// node gets when its group is removed via NodeGroups.removeLastGroup().
-		var mergedHue = (nodeA.hue === nodeB.hue) ? nodeB.hue : null;
+		// Node Group: keep it if both nodes agree (including both being
+		// ungrouped); if only one side has a defined group and the other
+		// is ungrouped (null), adopt the defined one - there's no real
+		// conflict there. Only two DIFFERENT defined groups are a genuine
+		// contradiction, falling back to ungrouped (null), the same value
+		// a node gets when its group is removed via NodeGroups.removeLastGroup().
+		var mergedHue;
+		if(nodeA.hue === nodeB.hue) mergedHue = nodeA.hue;
+		else if(nodeA.hue === null) mergedHue = nodeB.hue;
+		else if(nodeB.hue === null) mergedHue = nodeA.hue;
+		else mergedHue = null;
 
 		var mergedNode = self.addNode({
 			x:           nodeB.x,
