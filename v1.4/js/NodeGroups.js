@@ -72,10 +72,21 @@ function NodeGroups(loopy){
 	// full re-render of the group list (and any open swatch pickers) on
 	// every keystroke, stealing focus out of the input being typed into.
 	// Only publishes model/changed (dirty-flag/save tracking).
+	// While "Cluster by groups" is on (Sidebar.js's suboption under
+	// Cluster), a group's name IS its members' Cluster name, so renaming
+	// it here renames that Cluster too - via Clusters.renameCluster, so
+	// the Cluster's description (which lives there, not here) follows
+	// the rename instead of being orphaned under the old name.
 	self.setName = function(index, name){
 		if(!self.groups[index]) return;
+		var oldName = self.groups[index].name;
 		self.groups[index].name = name;
-		publish("model/changed");
+		var clusterByGroups = self.loopy.nodeOptions && self.loopy.nodeOptions.get("clusterByGroups");
+		if(clusterByGroups && self.loopy.clusters && oldName !== name){
+			self.loopy.clusters.renameCluster(oldName, name); // publishes model/changed itself
+		} else {
+			publish("model/changed");
+		}
 	};
 
 	// Groups can only grow/shrink from the end, so an existing node's

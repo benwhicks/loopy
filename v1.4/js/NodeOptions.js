@@ -77,7 +77,17 @@ function NodeOptions(loopy){
 	// settings[] alignment. It's still grouped under "Node Fields" in
 	// the Sidebar's Model options UI, purely a display concern.
 	self.NODE_KEYS_2 = ["cluster"];
-	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS).concat(self.INTERACTION_KEYS).concat(self.NODE_KEYS_2);
+	// Third-wave: "Cluster by groups" - a suboption shown only under the
+	// "Cluster" checkbox (Sidebar.js), which keeps every node's Cluster
+	// synced to its Node Group's name while on (see Loopy.js's
+	// syncClustersToGroups and NodeGroups.js's setName). Not a plain
+	// field-visibility toggle - turning it on actively mutates node data
+	// - but it reuses this same diagram-default/local-override machinery
+	// for consistency with every other Model options checkbox. Appended
+	// AFTER NODE_KEYS_2 (index 15) for the same backward-compatibility
+	// reason as NODE_KEYS_2 itself.
+	self.NODE_KEYS_3 = ["clusterByGroups"];
+	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS).concat(self.INTERACTION_KEYS).concat(self.NODE_KEYS_2).concat(self.NODE_KEYS_3);
 
 	self.storageKey = "loopy_node_options";
 

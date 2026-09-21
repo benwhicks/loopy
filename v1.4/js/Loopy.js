@@ -48,6 +48,32 @@ function Loopy(config){
 	// Clusters (free-text node grouping, separate from Node Groups' colour palette)
 	self.clusters = new Clusters(self);
 
+	// "Cluster by groups" (Sidebar.js's suboption under the "Cluster"
+	// Model options checkbox, nodeOptions key "clusterByGroups") - while
+	// on, every node's Cluster is kept identical to its Node Group's
+	// name (an ungrouped node gets "" - no cluster). A rename is handled
+	// separately by NodeGroups.setName (via Clusters.renameCluster, so
+	// the description follows); this covers everything else that can
+	// desync the two - toggling the checkbox on, loading a diagram,
+	// and adding/removing/reassigning a group (all via "groups/changed").
+	// Cheap and idempotent (a no-op once already in sync), so it's fine
+	// to call liberally rather than trying to hook every single path
+	// that can change a node's hue.
+	self.syncClustersToGroups = function(){
+		if(!self.nodeOptions.get("clusterByGroups")) return;
+		var changed = false;
+		self.model.nodes.forEach(function(node){
+			var desired = (node.hue === null || node.hue === undefined) ? "" : self.nodeGroups.getName(node.hue);
+			if(node.cluster !== desired){
+				node.cluster = desired;
+				changed = true;
+			}
+		});
+		if(changed) publish("model/changed");
+	};
+	subscribe("settings/changed", function(){ self.syncClustersToGroups(); });
+	subscribe("groups/changed", function(){ self.syncClustersToGroups(); });
+
 	///////////////////
 	// AUTO-LAYOUT   //
 	///////////////////

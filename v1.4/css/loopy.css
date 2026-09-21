@@ -439,6 +439,14 @@ SIDEBAR: GLOBAL OPTIONS (shown on the deselected/"Edit" page)
 	height: 15px;
 	cursor: pointer;
 }
+.options_checkbox_row_sub{
+	margin-left: 23px;
+	font-size: 13px;
+	color: #666;
+}
+#sidebar[mode=play] .options_checkbox_row_sub{
+	color: #999;
+}
 .options_group_row{
 	display: flex;
 	align-items: center;
@@ -807,6 +815,14 @@ MODAL
 .component_textarea {
 	font-size: calc(var(--component-font-size) - 2px);
 	padding: 4px;
+}
+
+/* "Model context" (Sidebar's "About this model" section) - a long free
+   text blurb, not a short per-node field, so it reads better noticeably
+   smaller than the responsive .component_textarea size above at every
+   breakpoint. Unconditional (no @media wrapper) so it always wins. */
+.model_context_textarea {
+	font-size: 13px;
 }
 
 .component_button {

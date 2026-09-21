@@ -51,6 +51,7 @@ function Sidebar(loopy){
 		var FIELD_LABELS = {
 			radius: "Size",
 			cluster: "Cluster",
+			clusterByGroups: "Cluster by groups",
 			mergeSplit: "Merge & Split",
 			direction: "Edge Polarity (+/-)",
 			active: "Node Type",
@@ -115,6 +116,20 @@ function Sidebar(loopy){
 		addSubheading("Node Fields");
 		body.appendChild(buildOptionCheckbox("radius", FIELD_LABELS.radius));
 		body.appendChild(buildOptionCheckbox("cluster", FIELD_LABELS.cluster));
+
+		// "Cluster by groups" - a suboption of "Cluster" itself (indented
+		// to show that), so it only makes sense - and is only shown -
+		// while Cluster is on. See Loopy.js's syncClustersToGroups for
+		// what turning it on actually does.
+		var clusterByGroupsRow = buildOptionCheckbox("clusterByGroups", FIELD_LABELS.clusterByGroups);
+		clusterByGroupsRow.className += " options_checkbox_row_sub";
+		body.appendChild(clusterByGroupsRow);
+		var updateClusterByGroupsVisibility = function(){
+			clusterByGroupsRow.style.display = loopy.nodeOptions.get("cluster") ? "flex" : "none";
+		};
+		updateClusterByGroupsVisibility();
+		subscribe("settings/changed", updateClusterByGroupsVisibility);
+
 		body.appendChild(buildOptionCheckbox("mergeSplit", FIELD_LABELS.mergeSplit));
 
 		addSubheading("Edge Fields");
@@ -403,6 +418,12 @@ function Sidebar(loopy){
 
         page.onedit = function(){
             var node = page.target;
+
+            // "Cluster by groups" - this node's own hue may have just
+            // changed (Node Group swatch picker), so bring its Cluster
+            // back in line before anything below reads/shows it.
+            loopy.syncClustersToGroups();
+
             var color = loopy.model.COLOUR_NODE_LIST[node.hue];
             page.getComponent("init").setBGColor(color);
             page.getComponent("hue").setBGColor(color);
@@ -697,7 +718,7 @@ function Sidebar(loopy){
 		body.appendChild(nameInput);
 
 		body.appendChild(_createLabel("<br>Model context:"));
-		var contextInput = _createInput("component_textarea", true);
+		var contextInput = _createInput("component_textarea model_context_textarea", true);
 		// Property is "contextText", NOT "context" - Model.js already uses
 		// self.context for its canvas 2D rendering context; reusing that
 		// name here would silently overwrite it and break drawing.
