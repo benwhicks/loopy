@@ -56,6 +56,7 @@ New Features:
   - Export to DOT format
   - Zoom in/out support
   - Multiline node text support
+  - Node merge: drag one node onto another, confirm the prompt, and they combine into one node, inheriting its edges (later made opt-in and paired with node split in v1.4's "Merge & Split")
 
 Fixes & Changes:
   - Node text now wraps to the next line and auto-fits within the node
