@@ -23,11 +23,14 @@ New Features:
   - Node description field: a paragraph of documentation per node, shown only in the sidebar (never drawn on the canvas)
   - Node Groups: named colour categories using the Okabe-Ito colour-blind-safe palette, 1-8 groups, renameable, plus a "clear group" option that leaves a node explicitly ungrouped (grey)
   - Global, per-field visibility toggles ("Model options"): almost every node/edge field is off by default until switched on, keeping the sidebar minimal until you need more
-  - Edge Polarity is now a single global setting: turning it on shows the +/- glyph on every edge and lets you edit it from the sidebar; turning it off hides the glyph everywhere without touching the underlying data
-  - Negative-polarity edges are always shown in dark red, independent of the Edge Polarity setting
+  - Edge Polarity is now a single global setting with two mutually exclusive display modes: off (default) always shows a "-" edge in dark red; on shows the +/- glyph on every edge instead (editable from the sidebar) and the dark-red colouring falls back to normal/speed-based colouring
   - Edge Types: Directed (default), Bi-directed (dashed line, arrowheads at both ends), and Questionable (dotted line, "?" marker, never delivers its signal during simulation)
   - Auto-layout: re-arrange the whole diagram in one click, either Force-Directed (always available) or Sugiyama/layered (enabled only on an acyclic graph), animated into place and fully undoable
   - "Clear graph" button to wipe the canvas, behind a confirmation prompt
+  - Merge & Split (opt-in "Merge & Split" toggle, off by default): drag one node onto another to merge them - matching Node Groups are kept (an ungrouped side adopts the other's group; two different groups fall back to ungrouped) and descriptions concatenate as "NodeA: ...\nNodeB: ..."; Alt+drag a node (or use the Node sidebar's "split node" button) to peel off a full duplicate instead, downgrading every affected edge to "Questionable" so old connections get reviewed before they're trusted again
+  - Cluster: an optional, free-text node attribute for grouping nodes outside the fixed 1-8 Node Groups - any number of clusters, each with its own shared description, plus a "rename" action that retags every member at once; a "Cluster by groups" option keeps cluster names automatically in sync with Node Group names
+  - "About this model": a collapsible sidebar section for a Model name and a longer Model context blurb - diagram-level notes that travel with the saved/shared link
+  - DOT export rewritten for full metadata coverage: clusters as Graphviz subgraphs, node descriptions, model name/context, real Node Group colours, and edge type/polarity as structured attributes
 
 Fixes & Changes:
   - Retired the "split" node type from the sidebar - only Simulable and Non-simulable remain (older diagrams with split nodes still load and display correctly)
@@ -35,6 +38,10 @@ Fixes & Changes:
   - Sidebar redesigned: shows only the selected node's or edge's own fields, background-tinted to match the canvas selection highlight; a collapsible "Model options" section, the Node Groups editor, and export controls live on the deselected page
   - Default zoom on load is less zoomed in; "clear graph" resets pan/zoom back to 100%
   - Removed the Ctrl +/- keyboard zoom shortcut, which was clashing with the browser's own page zoom (Ctrl+Scroll and the toolbar buttons still zoom LOOPY's canvas)
+  - Sidebar reorganized again: the title/links/zoom block moved out into a small floating widget top-left (click it for the credits); the deselected page now runs Layout -> Node Groups -> collapsible Model options -> collapsible "Save, share or load" (bundling the history manager, DOT/link/file export, embed, and clear graph); Node Groups now starts with 2 groups instead of 4
+  - Fixed a stray, disconnected node being created when drawing a stroke through an existing node with the Ink tool
+  - Node split now zooms to fit afterwards so the new twin can't end up off-screen
+  - Model context text in the sidebar is now a smaller, more appropriate size for a long note
 
 Version 1.3:
 
