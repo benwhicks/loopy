@@ -25,6 +25,7 @@ function Node(model, config){
 		init: Node.defaultValue, // initial value!
 		label: "?",
 		description: "", // sidebar-only documentation text, never drawn on canvas
+		cluster: "", // optional free-text cluster name; "" = no cluster. See Clusters.js
 		hue: Node.defaultHue,
 		radius: model.DEFAULT_NODE_RADIUS,
 		gain: model.DEFAULT_NODE_GAIN,

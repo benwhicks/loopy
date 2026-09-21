@@ -45,6 +45,9 @@ function Loopy(config){
 	self.nodeGroups = new NodeGroups(self);
 	self.model.refreshColourList();
 
+	// Clusters (free-text node grouping, separate from Node Groups' colour palette)
+	self.clusters = new Clusters(self);
+
 	///////////////////
 	// AUTO-LAYOUT   //
 	///////////////////

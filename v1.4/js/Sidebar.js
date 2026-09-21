@@ -50,6 +50,7 @@ function Sidebar(loopy){
 
 		var FIELD_LABELS = {
 			radius: "Size",
+			cluster: "Cluster",
 			mergeSplit: "Merge & Split",
 			direction: "Edge Polarity (+/-)",
 			active: "Node Type",
@@ -113,6 +114,7 @@ function Sidebar(loopy){
 
 		addSubheading("Node Fields");
 		body.appendChild(buildOptionCheckbox("radius", FIELD_LABELS.radius));
+		body.appendChild(buildOptionCheckbox("cluster", FIELD_LABELS.cluster));
 		body.appendChild(buildOptionCheckbox("mergeSplit", FIELD_LABELS.mergeSplit));
 
 		addSubheading("Edge Fields");
@@ -291,6 +293,12 @@ function Sidebar(loopy){
         page.addComponent("hue", new ComponentNodeGroup({
             label: "Node Group:"
         }));
+        page.addComponent("cluster", new ComponentCluster({
+            label: "<br><br>Cluster:"
+        }));
+        var clusterDescriptionComponent = page.addComponent("clusterDescription", new ComponentClusterDescription({
+            label: "<br>Cluster description:"
+        }));
         page.addComponent("init", new ComponentSlider({
             bg: "initial",
             label: "Start Amount:",
@@ -334,8 +342,12 @@ function Sidebar(loopy){
         // off only hides its Sidebar UI - the underlying Node property is
         // untouched and the node continues to simulate/render normally.
         // "hue" (Node Group) is deliberately absent - it's always on, so
-        // its swatch picker is never hidden here.
-        var OPTIONAL_KEYS = ["active", "init", "radius", "gain", "strength"];
+        // its swatch picker is never hidden here. "clusterDescription" is
+        // also absent - it's a pseudo-field (see below) with visibility
+        // driven by BOTH the "cluster" toggle and whether this node
+        // actually has a cluster set, handled separately below rather
+        // than through this generic one-toggle-per-key loop.
+        var OPTIONAL_KEYS = ["active", "init", "radius", "gain", "strength", "cluster"];
 
         page.updateOptionVisibility = function(){
             var nodeOptions = loopy.nodeOptions;
@@ -351,6 +363,21 @@ function Sidebar(loopy){
                 }
             }
             noOptionsHint.dom.style.display = anyVisible ? "none" : "block";
+
+            // "Cluster description" (pseudo-field, see OPTIONAL_KEYS note
+            // above) - shown only when the Cluster field itself is on AND
+            // this node actually has a cluster set. Refreshed live so
+            // typing a different cluster name (or switching nodes) keeps
+            // the shown description in sync with the right cluster's
+            // shared text (Clusters.js).
+            if(clusterDescriptionComponent && clusterDescriptionComponent.dom){
+                var node = page.target;
+                var showClusterDescription = nodeOptions.get("cluster") && node && !!node.cluster;
+                clusterDescriptionComponent.dom.style.display = showClusterDescription ? "block" : "none";
+                if(showClusterDescription) clusterDescriptionComponent.show();
+            }
+            var clusterComponent = page.getComponent("cluster");
+            if(clusterComponent && clusterComponent.refreshRenameButton) clusterComponent.refreshRenameButton();
 
             // "split node" button - only offered when Merge & Split is on
             // (splitBtn is declared further down, after "delete node";
@@ -625,6 +652,67 @@ function Sidebar(loopy){
 		return container;
 	};
 
+	// "About this model" - free-text diagram-level metadata (a short
+	// name + a longer context blurb), collapsible like Model options and
+	// Save/share below. There's no "selected object" to hang a normal
+	// Component off (this isn't a Node/Edge field), so it's built the
+	// same way as the Node Groups editor: raw DOM, bound directly to
+	// loopy.model.name/context. Refreshed only from Model.js's
+	// "modelinfo/changed" (published on an actual diagram load) rather
+	// than "model/changed" (published on every keystroke here too) -
+	// otherwise typing would re-set these inputs' own .value mid-edit
+	// and jump the cursor.
+	var _buildModelInfoSection = function(){
+
+		var container = document.createElement("div");
+		container.id = "sidebar_model_info";
+
+		var toggleRow = document.createElement("div");
+		toggleRow.className = "options_toggle";
+		var collapsed = true;
+		var setToggleLabel = function(){
+			toggleRow.innerHTML = (collapsed ? "&#9656;" : "&#9662;") + " About this model";
+		};
+		setToggleLabel();
+		container.appendChild(toggleRow);
+
+		var body = document.createElement("div");
+		body.className = "options_body";
+		body.style.display = "none";
+		container.appendChild(body);
+
+		toggleRow.onclick = function(){
+			collapsed = !collapsed;
+			body.style.display = collapsed ? "none" : "block";
+			setToggleLabel();
+		};
+
+		body.appendChild(_createLabel("Model name:"));
+		var nameInput = _createInput("component_input");
+		nameInput.value = loopy.model.name || "";
+		nameInput.oninput = function(){
+			loopy.model.name = nameInput.value;
+			publish("model/changed");
+		};
+		body.appendChild(nameInput);
+
+		body.appendChild(_createLabel("<br>Model context:"));
+		var contextInput = _createInput("component_textarea", true);
+		contextInput.value = loopy.model.context || "";
+		contextInput.oninput = function(){
+			loopy.model.context = contextInput.value;
+			publish("model/changed");
+		};
+		body.appendChild(contextInput);
+
+		subscribe("modelinfo/changed", function(){
+			nameInput.value = loopy.model.name || "";
+			contextInput.value = loopy.model.context || "";
+		});
+
+		return container;
+	};
+
 	// Edit (shown when nothing is selected - clicking empty canvas space).
 	// The old title/links/zoom header and the bottom credits blurb now
 	// live in the floating #loopy_header widget (top-left of the screen,
@@ -638,10 +726,13 @@ function Sidebar(loopy){
 		// 2. Node Groups (where you name the colours) - always on
 		page.dom.appendChild(_buildNodeGroupsSection());
 
-		// 3. Expandable global field-visibility options
+		// 3. Expandable "About this model" (name + context blurb)
+		page.dom.appendChild(_buildModelInfoSection());
+
+		// 4. Expandable global field-visibility options
 		page.dom.appendChild(_buildFieldsOptions());
 
-		// 4. Expandable save/share/load (history, export, embed, clear graph)
+		// 5. Expandable save/share/load (history, export, embed, clear graph)
 		page.dom.appendChild(_buildSaveShareSection());
 
 		self.addPage("Edit", page);
@@ -1263,6 +1354,127 @@ function ComponentNodeGroup(config){
 	subscribe("groups/changed", function(){
 		if(self.page && self.page.target) self.show();
 	});
+
+}
+
+// Cluster field: a free-text input (propName "cluster") with a <datalist>
+// autocomplete of every cluster name already in use on the diagram, plus
+// a "rename" button. Typing/picking a name here REASSIGNS this node to
+// that (possibly brand new) cluster - the default, direct interpretation
+// of editing a text field bound to one node. Renaming the cluster ITSELF
+// (retagging every member at once) is a deliberately separate action -
+// see Clusters.js's renameCluster() for why those two can't share one
+// plain text edit.
+function ComponentCluster(config){
+
+	// Inherit
+	var self = this;
+	Component.apply(self);
+
+	self.dom = document.createElement("div");
+	var label = _createLabel(config.label);
+	self.dom.appendChild(label);
+
+	var row = document.createElement("div");
+	row.className = "component_cluster_row";
+	self.dom.appendChild(row);
+
+	var datalistID = "cluster_names_" + Math.floor(Math.random()*1e9);
+	var input = _createInput("component_input");
+	input.type = "text";
+	input.setAttribute("list", datalistID);
+	input.oninput = function(){
+		self.setValue(input.value);
+	};
+	row.appendChild(input);
+
+	var datalist = document.createElement("datalist");
+	datalist.id = datalistID;
+	row.appendChild(datalist);
+
+	var renameBtn = document.createElement("span");
+	renameBtn.className = "mini_button";
+	renameBtn.innerHTML = "rename";
+	renameBtn.title = "Rename this cluster everywhere it's used (doesn't move THIS node to a different cluster)";
+	renameBtn.onclick = function(){
+		var node = self.page.target;
+		if(!node || !node.cluster) return;
+		var newName = prompt(
+			"Rename cluster “" + node.cluster + "”.\n\n"+
+			"This renames the cluster everywhere it's used - every node "+
+			"in it will follow. To move just this node to a different "+
+			"cluster instead, edit the Cluster field directly.",
+			node.cluster
+		);
+		if(newName===null) return; // cancelled
+		newName = newName.trim();
+		if(!newName || newName===node.cluster) return;
+		window.loopy.clusters.renameCluster(node.cluster, newName);
+		self.show();
+		self.page.onedit();
+	};
+	row.appendChild(renameBtn);
+
+	self.show = function(){
+		input.value = self.getValue() || "";
+		datalist.innerHTML = "";
+		window.loopy.clusters.getAllNames().forEach(function(name){
+			var option = document.createElement("option");
+			option.value = name;
+			datalist.appendChild(option);
+		});
+		self.refreshRenameButton();
+	};
+
+	// Just the rename button's visibility, not the full show() (which
+	// also resets the input's own .value - fine on a fresh node select,
+	// but called from Sidebar.js on every keystroke IN THIS SAME input
+	// to keep the button in sync live, so it can't touch input.value
+	// there without fighting the user's cursor mid-type).
+	self.refreshRenameButton = function(){
+		var node = self.page.target;
+		renameBtn.style.display = (node && node.cluster) ? "inline-block" : "none";
+	};
+
+	// Not tinted to the node's colour, same treatment as Name/Description.
+	self.setBGColor = function(){};
+
+}
+
+// Cluster description: a textarea shared by every node in the same
+// cluster - NOT a per-node property, so it deliberately doesn't use
+// Component's default getValue/setValue (which read/write
+// page.target[propName]). Reads/writes go through loopy.clusters
+// instead, keyed by the CURRENT node's cluster name (see Clusters.js).
+function ComponentClusterDescription(config){
+
+	// Inherit
+	var self = this;
+	Component.apply(self);
+
+	self.dom = document.createElement("div");
+	var label = _createLabel(config.label);
+	self.dom.appendChild(label);
+
+	var input = _createInput("component_textarea", true);
+	input.oninput = function(){
+		var node = self.page.target;
+		if(!node || !node.cluster) return;
+		// Deliberately bypasses self.setValue()/page.onedit() - those
+		// would re-trigger this component's own show() (Sidebar.js's
+		// updateOptionVisibility refreshes it on every onedit) and reset
+		// THIS textarea's value mid-keystroke, jumping the cursor.
+		window.loopy.clusters.setDescription(node.cluster, input.value);
+		publish("model/changed");
+	};
+	self.dom.appendChild(input);
+
+	self.show = function(){
+		var node = self.page.target;
+		input.value = (node && node.cluster) ? window.loopy.clusters.getDescription(node.cluster) : "";
+	};
+
+	self.setBGColor = function(){};
 
 }
 

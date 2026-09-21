@@ -384,7 +384,8 @@ SIDEBAR: GLOBAL OPTIONS (shown on the deselected/"Edit" page)
 **********/
 
 #sidebar_options,
-#sidebar_save_share{
+#sidebar_save_share,
+#sidebar_model_info{
 	background: #ccc;
 	border-radius: 4px;
 	padding: 10px;
@@ -392,7 +393,8 @@ SIDEBAR: GLOBAL OPTIONS (shown on the deselected/"Edit" page)
 	font-size: 15px;
 }
 #sidebar[mode=play] #sidebar_options,
-#sidebar[mode=play] #sidebar_save_share{
+#sidebar[mode=play] #sidebar_save_share,
+#sidebar[mode=play] #sidebar_model_info{
 	background: #333;
 }
 .options_toggle{
@@ -494,6 +496,21 @@ NODE GROUP SWATCH PICKER (Node sidebar page)
 }
 .component_node_group_clear{
 	font-size: 18px;
+}
+
+/**********
+CLUSTER FIELD (Node sidebar page)
+**********/
+
+.component_cluster_row{
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.component_cluster_row .component_input{
+	flex: 1;
+	min-width: 0;
+	width: auto;
 }
 
 /**********

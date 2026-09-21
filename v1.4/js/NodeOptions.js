@@ -69,7 +69,15 @@ function NodeOptions(loopy){
 	// EDGE_KEYS in self.KEYS/settings[] (index 13) so existing indices
 	// 3-12 - and thus old saved links - are untouched.
 	self.INTERACTION_KEYS = ["mergeSplit"];
-	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS).concat(self.INTERACTION_KEYS);
+	// Second-wave node field ("Cluster", see Clusters.js/Sidebar.js).
+	// Appended AFTER INTERACTION_KEYS (index 14) rather than folded into
+	// NODE_KEYS above, for the same reason mergeSplit was appended after
+	// EDGE_KEYS: inserting it into NODE_KEYS would shift every index
+	// after it (EDGE_KEYS, INTERACTION_KEYS), breaking old saved links'
+	// settings[] alignment. It's still grouped under "Node Fields" in
+	// the Sidebar's Model options UI, purely a display concern.
+	self.NODE_KEYS_2 = ["cluster"];
+	self.KEYS = self.NODE_KEYS.concat(self.EDGE_KEYS).concat(self.INTERACTION_KEYS).concat(self.NODE_KEYS_2);
 
 	self.storageKey = "loopy_node_options";
 

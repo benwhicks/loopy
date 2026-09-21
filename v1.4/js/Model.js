@@ -20,6 +20,12 @@ function Model(loopy){
 	self.MAX_SIGNALS = 200;
 	self.MAX_SIGNALS_PER_EDGE = 25;
 
+	// Diagram-level metadata, shown in the Sidebar's "About this model"
+	// section (see Sidebar.js's _buildModelInfoSection). Free text, no
+	// effect on simulation/rendering.
+	self.name = "";
+	self.context = "";
+
 	//DEFINE CORE COLOURS
 	self.COLOUR_CONTROL_ARROWS = "rgba(0,0,0,0.8)";
 	self.COLOUR_NODE_TEXT = "rgba(0,0,0,0.8)";
@@ -186,12 +192,24 @@ function Model(loopy){
 		else if(nodeB.hue === null) mergedHue = nodeA.hue;
 		else mergedHue = null;
 
+		// Cluster: same reasoning as Node Group above - keep it if both
+		// sides agree (including both being cluster-less), adopt the
+		// defined side if only one has one, and fall back to "" (no
+		// cluster) if the two sides name different clusters, since that's
+		// a genuine contradiction, not something to silently guess at.
+		var mergedCluster;
+		if(nodeA.cluster === nodeB.cluster) mergedCluster = nodeA.cluster;
+		else if(!nodeA.cluster) mergedCluster = nodeB.cluster;
+		else if(!nodeB.cluster) mergedCluster = nodeA.cluster;
+		else mergedCluster = '';
+
 		var mergedNode = self.addNode({
 			x:           nodeB.x,
 			y:           nodeB.y,
 			label:       nodeA.label + '_' + nodeB.label,
 			description: mergedDescription,
 			hue:         mergedHue,
+			cluster:     mergedCluster,
 			radius:      nodeB.radius,
 			gain:        nodeB.gain,
 			init:        nodeB.init,
@@ -257,6 +275,7 @@ function Model(loopy){
 			label:       node.label,
 			description: node.description,
 			hue:         node.hue,
+			cluster:     node.cluster,
 			radius:      node.radius,
 			gain:        node.gain,
 			init:        node.init,
@@ -476,7 +495,9 @@ function Model(loopy){
 				node.topLabel !== undefined ? encodeURIComponent(node.topLabel) : "",
 				node.bottomLabel !== undefined ? encodeURIComponent(node.bottomLabel) : "",
 				// Description (index 12)
-				encodeURIComponent(node.description || "")
+				encodeURIComponent(node.description || ""),
+				// Cluster name (index 13) - see Clusters.js
+				encodeURIComponent(node.cluster || "")
 			]);
 		}
 		data.push(nodes);
@@ -537,6 +558,17 @@ function Model(loopy){
 		// Node Group names (index 5). Absent in old links -> default groups.
 		data.push(self.loopy.nodeGroups.getDiagramState());
 
+		// Cluster registry (index 6): [[name, description], ...]. Absent
+		// in old links -> no clusters. See Clusters.js.
+		data.push(self.loopy.clusters.getDiagramState());
+
+		// Model info (index 7): [name, context], both encoded. Absent in
+		// old links -> both "". See Sidebar.js's "About this model".
+		data.push([
+			encodeURIComponent(self.name || ""),
+			encodeURIComponent(self.context || "")
+		]);
+
 		// Return as string!
 		var dataString = JSON.stringify(data);
 		dataString = encodeURIComponent(dataString);
@@ -558,7 +590,7 @@ function Model(loopy){
 			return;
 		}
 
-		const [nodes, edges, labels, settings, UID, groupNames] = data;
+		const [nodes, edges, labels, settings, UID, groupNames, clusterEntries, modelInfo] = data;
 
 		// Nodes
 		for(var i=0;i<nodes.length;i++){
@@ -578,7 +610,9 @@ function Model(loopy){
 				topLabel: node[10] ? decodeURIComponent(node[10]) : undefined,
 				bottomLabel: node[11] ? decodeURIComponent(node[11]) : undefined,
 				// Restore description (absent in old v1.3 links -> "")
-				description: node[12] ? decodeURIComponent(node[12]) : ""
+				description: node[12] ? decodeURIComponent(node[12]) : "",
+				// Restore cluster name (absent in older links -> "")
+				cluster: node[13] ? decodeURIComponent(node[13]) : ""
 			});
 		}
 
@@ -623,6 +657,18 @@ function Model(loopy){
 
 		// Node Group names (absent in old links -> default groups).
 		self.loopy.nodeGroups.loadFromDiagram(groupNames);
+
+		// Cluster registry (absent in old links -> no clusters).
+		self.loopy.clusters.loadFromDiagram(clusterEntries);
+
+		// Model info (absent in old links -> both ""). Published
+		// separately from "model/changed" so the Sidebar's "About this
+		// model" inputs only refresh on an actual load - refreshing on
+		// every "model/changed" would reset those inputs' value (and
+		// jump the cursor) while someone's mid-keystroke typing into them.
+		self.name = (modelInfo && modelInfo[0]) ? decodeURIComponent(modelInfo[0]) : "";
+		self.context = (modelInfo && modelInfo[1]) ? decodeURIComponent(modelInfo[1]) : "";
+		publish("modelinfo/changed");
 
 		// META.
 		Node._UID = UID;
