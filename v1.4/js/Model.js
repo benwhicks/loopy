@@ -22,9 +22,13 @@ function Model(loopy){
 
 	// Diagram-level metadata, shown in the Sidebar's "About this model"
 	// section (see Sidebar.js's _buildModelInfoSection). Free text, no
-	// effect on simulation/rendering.
+	// effect on simulation/rendering. NOTE: named "contextText", NOT
+	// "context" - self.context is already used further down for the
+	// canvas 2D rendering context (self.context = ctx), and Dragger.js/
+	// Label.js both read loopy.model.context expecting that canvas
+	// context object. Reusing the name here would silently break drawing.
 	self.name = "";
-	self.context = "";
+	self.contextText = "";
 
 	//DEFINE CORE COLOURS
 	self.COLOUR_CONTROL_ARROWS = "rgba(0,0,0,0.8)";
@@ -566,7 +570,7 @@ function Model(loopy){
 		// old links -> both "". See Sidebar.js's "About this model".
 		data.push([
 			encodeURIComponent(self.name || ""),
-			encodeURIComponent(self.context || "")
+			encodeURIComponent(self.contextText || "")
 		]);
 
 		// Return as string!
@@ -667,7 +671,7 @@ function Model(loopy){
 		// every "model/changed" would reset those inputs' value (and
 		// jump the cursor) while someone's mid-keystroke typing into them.
 		self.name = (modelInfo && modelInfo[0]) ? decodeURIComponent(modelInfo[0]) : "";
-		self.context = (modelInfo && modelInfo[1]) ? decodeURIComponent(modelInfo[1]) : "";
+		self.contextText = (modelInfo && modelInfo[1]) ? decodeURIComponent(modelInfo[1]) : "";
 		publish("modelinfo/changed");
 
 		// META.
@@ -714,35 +718,118 @@ function Model(loopy){
 	/////////////////////////
 	self.exportToDOT = function(includePositions) {
 
+		// Escapes free text for safe embedding inside a double-quoted DOT
+		// string literal (label=, tooltip=, comment= values). Backslash
+		// MUST be escaped before quote - reversing the order lets a real
+		// quote in the text pair with our inserted escape-backslash and
+		// prematurely close the DOT string (verified against DOT's
+		// escaped-unit string grammar - do not reorder).
+		var escapeDotString = function(text){
+			return (text || "").toString()
+				.replace(/\\/g, '\\\\')
+				.replace(/"/g, '\\"');
+		};
+
+		// Flattens multi-line/whitespace-heavy free text to a single line,
+		// for use inside a quoted attribute value (tooltip/comment/graph
+		// label) - full multi-line text is only preserved in "//" header
+		// comments, which aren't inside a string literal so need none of
+		// this.
+		var flatten = function(text){
+			return (text || "").replace(/\s+/g, ' ').trim();
+		};
+
 		var dot = "digraph SystemModel {\n";
-		dot += "  rankdir=LR;\n";
+		dot += "  rankdir=LR;\n\n";
+
+		// Model metadata (comments: always safe, never affects layout)
+		if(self.name || self.contextText){
+			dot += "  // === Model Metadata ===\n";
+			if(self.name){
+				dot += "  // Name: " + self.name.replace(/\r\n|\r|\n/g, ' ') + "\n";
+			}
+			if(self.contextText){
+				dot += "  // Context:\n";
+				var contextLines = self.contextText.replace(/\r\n/g, "\n").split("\n");
+				for(var ci=0; ci<contextLines.length; ci++){
+					dot += "  //   " + contextLines[ci] + "\n";
+				}
+			}
+			dot += "\n";
+
+			// Graph-level label (actually rendered in the image). Context
+			// is truncated here so a long blurb doesn't dominate the
+			// rendered diagram - the full text is always in the header
+			// comment above regardless of length.
+			var GRAPH_LABEL_CONTEXT_MAX = 200;
+			var labelParts = [];
+			if(self.name) labelParts.push(self.name);
+			if(self.contextText){
+				var flatContext = flatten(self.contextText);
+				if(flatContext.length > GRAPH_LABEL_CONTEXT_MAX){
+					flatContext = flatContext.substring(0, GRAPH_LABEL_CONTEXT_MAX).trim() + "...";
+				}
+				if(flatContext) labelParts.push(flatContext);
+			}
+			if(labelParts.length > 0){
+				dot += '  label="' + escapeDotString(labelParts.join(' — ')) + '";\n';
+				dot += '  labelloc="t";\n';
+				dot += '  fontsize=16;\n\n';
+			}
+		}
+
 		dot += "  node [shape=circle, style=filled, fillcolor=lightgray];\n\n";
 
+		// Node Group colour legend (comments only) - fillcolor alone
+		// doesn't carry the human-readable group name.
+		var nodeGroups = self.loopy && self.loopy.nodeGroups;
+		var colourList = nodeGroups ? nodeGroups.getColourList() : null;
+		if(nodeGroups){
+			dot += "  // Node Group colours (fillcolor -> group name):\n";
+			for(var gi=0; gi<nodeGroups.groups.length; gi++){
+				dot += "  //   " + colourList[gi] + " = \"" + nodeGroups.getName(gi) + "\"\n";
+			}
+			dot += "  //   " + nodeGroups.NULL_COLOUR + " = (ungrouped)\n\n";
+		}
+
 		// Export nodes
+		var clusterOrder = [];   // cluster names, first-seen order
+		var clusterMembers = {}; // name -> ["n<id>", ...]
 		if(self.nodes && self.nodes.length > 0) {
 			dot += "  // Nodes\n";
 			for(var i=0; i<self.nodes.length; i++){
 				var node = self.nodes[i];
 				if(!node) continue;
 
-				// Safe label extraction - escape quotes and special chars
-				var nodeLabel = (node.label || "?").toString()
-					.replace(/"/g, '\\"')
-					.replace(/\\/g, '\\\\');
+				var nodeLabel = escapeDotString(node.label || "?");
 				dot += '  n' + node.id + ' [label="' + nodeLabel + '"';
 
-				// Add color
+				// Real, currently-configured Node Group colours, not a
+				// hardcoded map - and grey (not red) for an explicitly
+				// ungrouped node (hue === null).
 				var nodeHue = (node.hue !== undefined) ? node.hue : 0;
-				var colorMap = {
-					0: "#EA3E3E", // red
-					1: "#EA9D51", // orange
-					2: "#FEEE43", // yellow
-					3: "#BFEE3F", // green
-					4: "#7FD4FF", // blue
-					5: "#A97FFF"  // purple
-				};
-				var color = colorMap[nodeHue] || "#EA3E3E";
+				var color = (colourList && colourList[nodeHue] !== undefined)
+					? colourList[nodeHue]
+					: (nodeGroups ? nodeGroups.NULL_COLOUR : "#999999");
 				dot += ', fillcolor="' + color + '", fontcolor="black"';
+
+				// Node Group name, only for a node that actually has one
+				// (hue !== null) - reflects the diagram's real data,
+				// independent of the Sidebar's own field-visibility state.
+				if(nodeHue !== null && nodeGroups){
+					dot += ', group="' + escapeDotString(nodeGroups.getName(nodeHue)) + '"';
+				}
+
+				// Description - sidebar-only doc text, exposed as both
+				// tooltip (hover text in interactive SVG output) and
+				// comment (safe, renderer-agnostic metadata).
+				if(node.description){
+					var descFlat = flatten(node.description);
+					if(descFlat){
+						var descEscaped = escapeDotString(descFlat);
+						dot += ', tooltip="' + descEscaped + '", comment="' + descEscaped + '"';
+					}
+				}
 
 				// Add position if requested
 				if(includePositions && node.x !== undefined && node.y !== undefined){
@@ -752,6 +839,43 @@ function Model(loopy){
 				}
 
 				dot += '];\n';
+
+				// Collect cluster membership while we're already here.
+				if(node.cluster){
+					if(!clusterMembers.hasOwnProperty(node.cluster)){
+						clusterMembers[node.cluster] = [];
+						clusterOrder.push(node.cluster);
+					}
+					clusterMembers[node.cluster].push('n' + node.id);
+				}
+			}
+		}
+
+		// Clusters -> real Graphviz subgraphs, rendered as labeled boxes.
+		// Re-declaring an already-declared node ID inside a subgraph (bare
+		// "n3;", no attribute list) is valid DOT - it doesn't redeclare or
+		// reset that node's attributes, it just marks membership. The
+		// "cluster_" prefix is a hard Graphviz requirement (case-sensitive)
+		// for the box-drawing behaviour to trigger; using the cluster's
+		// first-seen index rather than a slugified name avoids both DOT-
+		// identifier escaping issues and two different names silently
+		// colliding into one box.
+		if(clusterOrder.length > 0){
+			dot += "\n  // Clusters\n";
+			for(var ci=0; ci<clusterOrder.length; ci++){
+				var clusterName = clusterOrder[ci];
+				var members = clusterMembers[clusterName];
+				dot += '  subgraph cluster_' + ci + ' {\n';
+				dot += '    label="' + escapeDotString(clusterName) + '";\n';
+				var clusterDescription = self.loopy && self.loopy.clusters
+					? self.loopy.clusters.getDescription(clusterName) : "";
+				if(clusterDescription){
+					dot += '    // ' + flatten(clusterDescription).replace(/\r\n|\r|\n/g, ' ') + '\n';
+				}
+				for(var mi=0; mi<members.length; mi++){
+					dot += '    ' + members[mi] + ';\n';
+				}
+				dot += '  }\n';
 			}
 		}
 
@@ -765,29 +889,37 @@ function Model(loopy){
 				var fromID = 'n' + edge.from.id;
 				var toID = 'n' + edge.to.id;
 
-				// Edge style based on strength
+				// Line style reflects edgeType (matches Edge.js's canvas
+				// draw()), independent of polarity - a "-" edge isn't
+				// "questionable", and strength===0 basically never occurs
+				// / isn't how "questionable" is actually represented.
 				var edgeStyle = 'solid';
+				if(edge.edgeType === 'bi-directed') edgeStyle = 'dashed';
+				else if(edge.edgeType === 'questionable') edgeStyle = 'dotted';
+
+				// Colour, the "+/-" label, and the new polarity attribute
+				// all come from the SAME source (direction, the canonical
+				// polarity) so they can never disagree with each other.
+				// direction is always exactly +/-1 per Edge.js's defaults/
+				// setDirection - using it instead of strength also avoids
+				// losing sign info if attenuation is ever 0 (strength
+				// would become 0/-0). Independent of edgeType - a
+				// "questionable" edge still carries real polarity data,
+				// it's just not delivering signal until reviewed.
 				var edgeLabel = '';
 				var edgeColor = '#666666';
-
-				if(edge.strength !== undefined) {
-					if(edge.strength > 0) {
-						edgeStyle = 'solid';
-						edgeLabel = '+';
-						edgeColor = '#4CAF50';
-					} else if(edge.strength < 0) {
-						edgeStyle = 'dashed';
-						edgeLabel = '-'; // Use regular hyphen instead of em dash
-						edgeColor = '#F44336';
-					} else {
-						edgeStyle = 'dotted';
-						edgeLabel = '?';
-						edgeColor = '#9E9E9E';
-					}
+				var polarityAttr = null;
+				var dir = edge.direction;
+				if(dir !== undefined && dir !== null){
+					if(dir > 0){ edgeLabel = '+'; edgeColor = '#4CAF50'; polarityAttr = '+'; }
+					else if(dir < 0){ edgeLabel = '-'; edgeColor = '#F44336'; polarityAttr = '-'; }
 				}
 
 				dot += '  ' + fromID + ' -> ' + toID;
 				dot += ' [label="' + edgeLabel + '", style="' + edgeStyle + '", color="' + edgeColor + '"';
+				if(polarityAttr){
+					dot += ', polarity="' + polarityAttr + '"';
+				}
 
 				// Handle self-loops
 				if(edge.from === edge.to) {

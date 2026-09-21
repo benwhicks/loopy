@@ -698,16 +698,19 @@ function Sidebar(loopy){
 
 		body.appendChild(_createLabel("<br>Model context:"));
 		var contextInput = _createInput("component_textarea", true);
-		contextInput.value = loopy.model.context || "";
+		// Property is "contextText", NOT "context" - Model.js already uses
+		// self.context for its canvas 2D rendering context; reusing that
+		// name here would silently overwrite it and break drawing.
+		contextInput.value = loopy.model.contextText || "";
 		contextInput.oninput = function(){
-			loopy.model.context = contextInput.value;
+			loopy.model.contextText = contextInput.value;
 			publish("model/changed");
 		};
 		body.appendChild(contextInput);
 
 		subscribe("modelinfo/changed", function(){
 			nameInput.value = loopy.model.name || "";
-			contextInput.value = loopy.model.context || "";
+			contextInput.value = loopy.model.contextText || "";
 		});
 
 		return container;

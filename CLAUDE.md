@@ -28,7 +28,7 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 | File | Role |
 |------|------|
 | `Loopy.js` | Top-level controller. Owns mode (edit/play), zoom, save/load, keyboard shortcuts. Entry point: `window.loopy = new Loopy()`. |
-| `Model.js` | Data layer. Owns arrays of `Node`, `Edge`, `Label`, plus diagram-level metadata (`name`, `context` - shown in the Sidebar's "About this model" section). Handles `serialize`/`deserialize` (URL-encoded JSON), `exportToDOT`, canvas drawing loop, and centering/scaling. |
+| `Model.js` | Data layer. Owns arrays of `Node`, `Edge`, `Label`, plus diagram-level metadata (`name`, `contextText` - shown in the Sidebar's "About this model" section; named `contextText` rather than `context` since `self.context` is already the canvas 2D rendering context, read elsewhere as `loopy.model.context` by `Dragger.js`/`Label.js`). Handles `serialize`/`deserialize` (URL-encoded JSON), `exportToDOT`, canvas drawing loop, and centering/scaling. |
 | `Node.js` | A circular node. `active`: 0 = non-simulable, 1 = simulable (default). `2` (split) is retired from the UI but still renders via `SplitNodeRenderer.js` for old saved links. Handles signal propagation, draw, kill. |
 | `Edge.js` | A directed arrow between nodes. Carries signals (particles that travel along the edge). Handles arc/curvature, speed, attenuation. Shows a "-" (balancing) edge's polarity one of two mutually-exclusive ways, picked globally by the `NodeOptions` "direction" toggle (not a per-edge setting): OFF (default) colours it dark red (`COLOUR_EDGE_NEGATIVE`), taking priority over speed-colouring; ON shows the +/- glyph on every edge instead and the colouring falls back to normal/speed-based. `edgeType` ("directed"/"bi-directed"/"questionable") always controls line style (solid/dashed/dotted), arrowhead count, and the "?" glyph, regardless of the "Edge Type" toggle; a "questionable" edge never delivers its signal. |
 | `SplitNodeRenderer.js` | Renders split nodes (legacy `active===2` only - no longer creatable) with separate top/bottom labels and a divider line. |
@@ -62,7 +62,7 @@ The app is a classic OOP-style single-page application using vanilla JS globals.
 - `key/undo`, `key/redo`, `key/zoomin`, `key/zoomout`, `key/zoomreset`
 - `settings/changed` — fired whenever the global Node/Edge field visibility toggles change (`NodeOptions.js`); the Sidebar's Node/Edge pages and Options header listen to show/hide fields live
 - `groups/changed` — fired whenever Node Groups are added/removed/reloaded (not on rename, to avoid stealing focus while typing a name — renames only publish `model/changed`); `Model.js` rebuilds `COLOUR_NODE_LIST`, the Sidebar's Node Group swatch picker and Options header re-render
-- `modelinfo/changed` — fired only when `Model.js`'s `name`/`context` are set from a diagram load (`deserialize`), never from typing in the Sidebar's own "About this model" fields — those write straight to `loopy.model.name`/`context` and publish plain `model/changed` instead, so the inputs' own live-typed value is never clobbered
+- `modelinfo/changed` — fired only when `Model.js`'s `name`/`contextText` are set from a diagram load (`deserialize`), never from typing in the Sidebar's own "About this model" fields — those write straight to `loopy.model.name`/`contextText` and publish plain `model/changed` instead, so the inputs' own live-typed value is never clobbered
 
 ## Serialization Format
 
@@ -82,7 +82,7 @@ Edge fields: `fromId, toId, arc, strength, speedMultiplier, [rotation], edgeType
 
 `clusterEntries[]` is a flat `[[name, description], ...]` dump of `Clusters.js`'s registry (order doesn't matter). Absent in older links, which fall back to no clusters.
 
-`modelInfo` is `[name(encoded), context(encoded)]` — `Model.js`'s diagram-level `name`/`context` metadata, shown in the Sidebar's "About this model" section. Absent in older links, which fall back to both "".
+`modelInfo` is `[name(encoded), contextText(encoded)]` — `Model.js`'s diagram-level `name`/`contextText` metadata, shown in the Sidebar's "About this model" section. Absent in older links, which fall back to both "".
 
 ## Embedding
 
